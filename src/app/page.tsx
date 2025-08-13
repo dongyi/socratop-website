@@ -161,7 +161,7 @@ export default function Home() {
           </h2>
           <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
             Have questions about Cadence? Want to provide feedback or report an issue? 
-            We'd love to hear from you.
+            We&apos;d love to hear from you.
           </p>
           <div className="bg-gray-900 rounded-2xl p-8 max-w-md mx-auto">
             <div className="mb-6">
