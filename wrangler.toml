@@ -1,0 +1,10 @@
+name = "socratop-website"
+main = "src/index.js"
+compatibility_date = "2023-12-01"
+
+[site]
+bucket = "./out"
+
+[[route]]
+pattern = "*"
+custom_domain = true
