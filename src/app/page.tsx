@@ -1,8 +1,46 @@
 import Image from "next/image";
 
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Cadence',
+    description: 'The perfect running companion that syncs your steps with your rhythm. Built-in metronome, GPS tracking, and seamless music integration.',
+    url: 'https://socratop.com',
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'iOS',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    downloadUrl: 'https://apps.apple.com/app/cadence180/id6746228613',
+    screenshot: [
+      'https://socratop.com/images/1.png',
+      'https://socratop.com/images/2.png',
+      'https://socratop.com/images/3.png'
+    ],
+    featureList: [
+      'Smart Metronome with adjustable BPM (160-200)',
+      'Precise GPS tracking with intelligent filtering',
+      'Apple Music and podcast integration',
+      'Background audio support',
+      'Real-time pace and distance tracking'
+    ],
+    author: {
+      '@type': 'Organization',
+      name: 'Cadence Team',
+      email: 'juvenpp@gmail.com'
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
@@ -190,5 +228,6 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

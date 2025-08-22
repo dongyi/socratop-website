@@ -13,8 +13,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cadence - The Perfect Running Companion",
-  description: "Run with perfect rhythm. Cadence combines a smart metronome, GPS tracking, and music integration for the ultimate running experience.",
+  metadataBase: new URL('https://socratop.com'),
+  title: "Cadence - The Perfect Running Companion | Smart Metronome & GPS Tracker",
+  description: "Run with perfect rhythm. Cadence combines a smart metronome, GPS tracking, and music integration for the ultimate running experience. Download now on App Store.",
+  keywords: "running app, metronome, GPS tracking, running cadence, fitness app, Apple Music integration, running companion, BPM tracker",
+  authors: [{ name: "Cadence Team" }],
+  creator: "Cadence Team",
+  publisher: "Cadence",
+  applicationName: "Cadence",
+  category: "Fitness",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://socratop.com',
+    title: 'Cadence - The Perfect Running Companion',
+    description: 'Run with perfect rhythm. Smart metronome, GPS tracking, and music integration for runners.',
+    siteName: 'Cadence',
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Cadence Running App - Smart Metronome & GPS Tracker',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cadence - The Perfect Running Companion',
+    description: 'Run with perfect rhythm. Smart metronome, GPS tracking, and music integration.',
+    images: ['/images/twitter-image.png'],
+    creator: '@cadenceapp',
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+  },
+  alternates: {
+    canonical: 'https://socratop.com',
+  },
 };
 
 export default function RootLayout({
