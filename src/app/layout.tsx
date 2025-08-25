@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://socratop.com'),
   title: "Cadence - The Perfect Running Companion | Smart Metronome & GPS Tracker",
   description: "Run with perfect rhythm. Cadence combines a smart metronome, GPS tracking, and music integration for the ultimate running experience. Download now on App Store.",
-  keywords: "running app, metronome, GPS tracking, running cadence, fitness app, Apple Music integration, running companion, BPM tracker",
+  keywords: "running app, metronome, GPS tracking, running cadence, fitness app, Apple Music integration, running companion, BPM tracker, 跑步应用, 节拍器, GPS追踪, 跑步步频, 健身应用",
   authors: [{ name: "Cadence Team" }],
   creator: "Cadence Team",
   publisher: "Cadence",
@@ -75,7 +76,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

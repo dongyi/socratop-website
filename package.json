@@ -11,9 +11,12 @@
     "deploy": "npm run export"
   },
   "dependencies": {
+    "i18next": "^25.4.2",
     "next": "15.4.6",
+    "next-i18next": "^15.4.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-i18next": "^15.7.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

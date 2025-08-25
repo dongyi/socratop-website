@@ -1,6 +1,11 @@
+'use client';
+
 import Image from "next/image";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Home() {
+  const { t, language } = useLanguage();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -40,17 +45,17 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <LanguageToggle />
       <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <h1 className="text-6xl md:text-8xl font-light mb-8 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            Cadence
+            {t('hero_title')}
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-            The perfect running companion that syncs your steps with your rhythm. 
-            Built-in metronome, GPS tracking, and seamless music integration.
+            {t('hero_description')}
           </p>
           
           {/* App Store Download Button */}
@@ -64,8 +69,8 @@ export default function Home() {
               <div className="bg-black border border-gray-600 rounded-2xl px-6 py-4 flex items-center gap-4 hover:border-gray-400 transition-colors">
                 <div className="text-4xl">📱</div>
                 <div className="text-left">
-                  <div className="text-sm text-gray-400">Download on the</div>
-                  <div className="text-xl font-semibold">App Store</div>
+                  <div className="text-sm text-gray-400">{t('download_on')}</div>
+                  <div className="text-xl font-semibold">{t('app_store')}</div>
                 </div>
               </div>
             </a>
@@ -76,13 +81,13 @@ export default function Home() {
               href="#features" 
               className="bg-white text-black px-8 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors"
             >
-              Learn More
+              {t('learn_more')}
             </a>
             <a 
               href="#contact" 
               className="border border-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-black transition-colors"
             >
-              Get in Touch
+              {t('get_in_touch')}
             </a>
           </div>
         </div>
@@ -92,10 +97,10 @@ export default function Home() {
       <section id="features" className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-light text-center mb-8">
-            Run with Perfect Rhythm
+            {t('features_title')}
           </h2>
           <div className="text-center mb-16">
-            <p className="text-gray-300 mb-6">Available now on the App Store</p>
+            <p className="text-gray-300 mb-6">{t('available_now')}</p>
             <a 
               href="https://apps.apple.com/app/cadence180/id6746228613"
               target="_blank"
@@ -103,7 +108,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors"
             >
               <span className="text-xl">📱</span>
-              Download Cadence
+              {t('download_cadence')}
             </a>
           </div>
           <div className="grid md:grid-cols-3 gap-12">
@@ -111,30 +116,27 @@ export default function Home() {
               <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <span className="text-2xl">🎵</span>
               </div>
-              <h3 className="text-xl font-semibold mb-4">Smart Metronome</h3>
+              <h3 className="text-xl font-semibold mb-4">{t('smart_metronome')}</h3>
               <p className="text-gray-400 leading-relaxed">
-                Adjustable BPM from 160-200 to match your perfect running cadence. 
-                Background audio support keeps the beat going.
+                {t('smart_metronome_desc')}
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <span className="text-2xl">📍</span>
               </div>
-              <h3 className="text-xl font-semibold mb-4">GPS Tracking</h3>
+              <h3 className="text-xl font-semibold mb-4">{t('gps_tracking')}</h3>
               <p className="text-gray-400 leading-relaxed">
-                Precise location tracking with intelligent filtering. 
-                View your route, distance, and pace in real-time.
+                {t('gps_tracking_desc')}
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <span className="text-2xl">🎧</span>
               </div>
-              <h3 className="text-xl font-semibold mb-4">Music Integration</h3>
+              <h3 className="text-xl font-semibold mb-4">{t('music_integration')}</h3>
               <p className="text-gray-400 leading-relaxed">
-                Seamlessly play your Apple Music playlists and podcasts 
-                while maintaining perfect running rhythm.
+                {t('music_integration_desc')}
               </p>
             </div>
           </div>
@@ -145,7 +147,7 @@ export default function Home() {
       <section className="py-20 px-4 bg-gray-900">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-light text-center mb-16">
-            See Cadence in Action
+            {t('see_in_action')}
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
@@ -158,8 +160,8 @@ export default function Home() {
                   className="rounded-2xl"
                 />
               </div>
-              <h3 className="text-lg font-medium mb-2">Metronome Control</h3>
-              <p className="text-gray-400 text-sm">Set your perfect BPM and start your run</p>
+              <h3 className="text-lg font-medium mb-2">{t('metronome_control')}</h3>
+              <p className="text-gray-400 text-sm">{t('metronome_control_desc')}</p>
             </div>
             <div className="text-center">
               <div className="bg-black rounded-3xl p-4 mb-4 inline-block">
@@ -171,8 +173,8 @@ export default function Home() {
                   className="rounded-2xl"
                 />
               </div>
-              <h3 className="text-lg font-medium mb-2">Music Integration</h3>
-              <p className="text-gray-400 text-sm">Control your music while maintaining rhythm</p>
+              <h3 className="text-lg font-medium mb-2">{t('music_integration_screen')}</h3>
+              <p className="text-gray-400 text-sm">{t('music_integration_screen_desc')}</p>
             </div>
             <div className="text-center">
               <div className="bg-black rounded-3xl p-4 mb-4 inline-block">
@@ -184,8 +186,8 @@ export default function Home() {
                   className="rounded-2xl"
                 />
               </div>
-              <h3 className="text-lg font-medium mb-2">Track Progress</h3>
-              <p className="text-gray-400 text-sm">View detailed stats after each run</p>
+              <h3 className="text-lg font-medium mb-2">{t('track_progress')}</h3>
+              <p className="text-gray-400 text-sm">{t('track_progress_desc')}</p>
             </div>
           </div>
         </div>
@@ -195,20 +197,19 @@ export default function Home() {
       <section id="contact" className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-light mb-8">
-            Get in Touch
+            {t('contact_title')}
           </h2>
           <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-            Have questions about Cadence? Want to provide feedback or report an issue? 
-            We&apos;d love to hear from you.
+            {t('contact_description')}
           </p>
           <div className="bg-gray-900 rounded-2xl p-8 max-w-md mx-auto">
             <div className="mb-6">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <span className="text-2xl">✉️</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Email Us</h3>
+              <h3 className="text-xl font-semibold mb-2">{t('email_us')}</h3>
               <p className="text-gray-400 mb-6">
-                Send us your thoughts, suggestions, or bug reports
+                {t('email_description')}
               </p>
             </div>
             <a 
@@ -224,7 +225,19 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-gray-800">
         <div className="max-w-6xl mx-auto text-center text-gray-400">
-          <p>&copy; 2024 Cadence. Built with passion for runners.</p>
+          <p>{t('footer_copyright')}</p>
+          {language === 'zh' && (
+            <p className="mt-2 text-sm">
+              <a 
+                href="https://beian.miit.gov.cn/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-gray-300 transition-colors"
+              >
+                {t('icp_filing')}
+              </a>
+            </p>
+          )}
         </div>
       </footer>
     </div>
