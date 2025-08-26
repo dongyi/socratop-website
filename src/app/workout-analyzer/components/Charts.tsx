@@ -329,11 +329,14 @@ class SimpleChart {
   }
 
   private renderNoData(): void {
+    const noDataLocale = this.options.locale || 'en-US';
+    const isZh = noDataLocale.includes('zh');
+    
     this.ctx.fillStyle = '#666';
     this.ctx.font = '14px Arial';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('No data', this.width / 2, this.height / 2);
+    this.ctx.fillText(isZh ? '无数据' : 'No data', this.width / 2, this.height / 2);
   }
 
   private setupMouseEvents(): void {
@@ -468,10 +471,13 @@ class SimpleChart {
       valueText = point.data.y.toFixed(1);
     }
 
+    const tooltipLocale = this.options.locale || 'en-US';
+    const isZh = tooltipLocale.includes('zh');
+    
     const tooltipContent = `
-      <div>时间: ${time}</div>
-      <div>数值: ${valueText}</div>
-      <div>数据点: ${point.index + 1}/${this.data.datasets[0].data.length}</div>
+      <div>${isZh ? '时间' : 'Time'}: ${time}</div>
+      <div>${isZh ? '数值' : 'Value'}: ${valueText}</div>
+      <div>${isZh ? '数据点' : 'Point'}: ${point.index + 1}/${this.data.datasets[0].data.length}</div>
     `;
 
     this.tooltip.innerHTML = tooltipContent;
@@ -507,7 +513,7 @@ class SimpleChart {
 }
 
 export function Charts({ workouts, showOutlierFilter = false }: { workouts: WorkoutData[]; showOutlierFilter?: boolean }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [filterOutliers, setFilterOutliers] = useState(true);
   const chartRefs = useRef<{ [key: string]: SimpleChart }>({});
 
@@ -1016,7 +1022,8 @@ export function Charts({ workouts, showOutlierFilter = false }: { workouts: Work
                                 }
                               },
                               invertY: type === 'speed' || type === 'enhanced_speed',
-                              yAxisRange: yAxisRanges[type]
+                              yAxisRange: yAxisRanges[type],
+                              locale: language === 'zh' ? 'zh-CN' : 'en-US'
                             }
                           });
                         }
