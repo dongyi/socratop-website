@@ -9,7 +9,7 @@ export default function Home() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'Cadence',
+    name: 'Cadence180',
     description: 'The perfect running companion that syncs your steps with your rhythm. Built-in metronome, GPS tracking, and seamless music integration.',
     url: 'https://socratop.com',
     applicationCategory: 'HealthApplication',
@@ -84,6 +84,12 @@ export default function Home() {
               {t('learn_more')}
             </a>
             <a 
+              href="/workout-analyzer" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-full font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+            >
+              🏃 {t('workout_data_analysis')}
+            </a>
+            <a 
               href="#contact" 
               className="border border-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-black transition-colors"
             >
@@ -111,7 +117,7 @@ export default function Home() {
               {t('download_cadence')}
             </a>
           </div>
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <span className="text-2xl">🎵</span>
@@ -138,6 +144,23 @@ export default function Home() {
               <p className="text-gray-400 leading-relaxed">
                 {t('music_integration_desc')}
               </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-4">{t('workout_data_analysis')}</h3>
+              <p className="text-gray-400 leading-relaxed">
+                {t('workout_data_analysis_desc')}
+              </p>
+              <div className="mt-4">
+                <a 
+                  href="/workout-analyzer"
+                  className="inline-flex items-center text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {t('try_now')}
+                </a>
+              </div>
             </div>
           </div>
         </div>

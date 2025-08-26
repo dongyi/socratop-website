@@ -1,0 +1,845 @@
+'use client';
+
+import React, { useRef, useEffect, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { WorkoutData } from './NewWorkoutAnalyzer';
+
+interface ChartPoint {
+  x: Date;
+  y: number;
+  originalSpeed?: number;
+}
+
+interface Dataset {
+  data: ChartPoint[];
+  label: string;
+  borderColor: string;
+  borderWidth?: number;
+}
+
+interface ChartConfig {
+  type: 'line';
+  data: {
+    datasets: Dataset[];
+  };
+  options: {
+    plugins?: {
+      title?: {
+        display: boolean;
+        text: string;
+      };
+    };
+    invertY?: boolean;
+    yAxisRange?: {
+      min: number;
+      max: number;
+    };
+    filterInfo?: {
+      originalCount: number;
+      filteredCount: number;
+      filterEnabled: boolean;
+    };
+  };
+}
+
+// 将分钟数转换为分:秒格式
+function formatMinutesToMS(minutes: number): string {
+  const mins = Math.floor(minutes);
+  const secs = Math.round((minutes - mins) * 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// 计算数据的统计信息
+function calculateStats(data: ChartPoint[]): { mean: number; stdDev: number; min: number; max: number } {
+  const values = data.map(point => point.y);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  const min = mean - 2 * stdDev;
+  const max = Math.max(...values);
+  return { mean, stdDev, min, max };
+}
+
+class SimpleChart {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  config: ChartConfig;
+  data: ChartConfig['data'];
+  options: ChartConfig['options'];
+  tooltip: HTMLDivElement | null = null;
+  hoveredPoint: { data: ChartPoint; index: number; distance: number; screenX: number; screenY: number } | null = null;
+  boundMouseMove: (event: MouseEvent) => void;
+  boundMouseLeave: () => void;
+  width: number = 0;
+  height: number = 0;
+  padding = {
+    top: 40,
+    right: 20,
+    bottom: 60,
+    left: 60
+  };
+  chartWidth: number = 0;
+  chartHeight: number = 0;
+
+  constructor(canvas: HTMLCanvasElement, config: ChartConfig) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d')!;
+    this.config = config;
+    this.data = config.data;
+    this.options = config.options || {};
+    
+    this.boundMouseMove = this.onMouseMove.bind(this);
+    this.boundMouseLeave = this.onMouseLeave.bind(this);
+    
+    this.resize();
+    this.render();
+    this.setupMouseEvents();
+  }
+
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    this.canvas.width = rect.width * devicePixelRatio;
+    this.canvas.height = rect.height * devicePixelRatio;
+    
+    this.ctx.scale(devicePixelRatio, devicePixelRatio);
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+    
+    this.width = rect.width;
+    this.height = rect.height;
+    
+    this.chartWidth = this.width - this.padding.left - this.padding.right;
+    this.chartHeight = this.height - this.padding.top - this.padding.bottom;
+  }
+
+  render() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    
+    if (this.config.type === 'line') {
+      this.renderLineChart();
+    }
+  }
+
+  renderLineChart() {
+    const dataset = this.data.datasets[0];
+    if (!dataset || !dataset.data || dataset.data.length === 0) {
+      this.renderNoData();
+      return;
+    }
+
+    const xValues = dataset.data.map(d => d.x.getTime());
+    const yValues = dataset.data.map(d => d.y);
+    
+    const xMin = Math.min(...xValues);
+    const xMax = Math.max(...xValues);
+    
+    let yMin, yMax;
+    if (this.options.yAxisRange) {
+      yMin = this.options.yAxisRange.min;
+      yMax = this.options.yAxisRange.max;
+    } else {
+      yMin = Math.min(...yValues) * 0.9;
+      yMax = Math.max(...yValues) * 1.1;
+    }
+
+    this.renderGrid(xMin, xMax, yMin, yMax);
+    this.renderAxes(xMin, xMax, yMin, yMax);
+    this.renderDataLine(dataset, xMin, xMax, yMin, yMax);
+    this.renderTitle();
+  }
+
+  renderGrid(_xMin: number, _xMax: number, _yMin: number, _yMax: number) {
+    this.ctx.strokeStyle = '#e0e0e0';
+    this.ctx.lineWidth = 1;
+    
+    const xTicks = 5;
+    for (let i = 0; i <= xTicks; i++) {
+      const x = this.padding.left + (this.chartWidth / xTicks) * i;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, this.padding.top);
+      this.ctx.lineTo(x, this.padding.top + this.chartHeight);
+      this.ctx.stroke();
+    }
+    
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const y = this.padding.top + (this.chartHeight / yTicks) * i;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.padding.left, y);
+      this.ctx.lineTo(this.padding.left + this.chartWidth, y);
+      this.ctx.stroke();
+    }
+  }
+
+  renderAxes(xMin: number, xMax: number, yMin: number, yMax: number) {
+    this.ctx.strokeStyle = '#333';
+    this.ctx.lineWidth = 2;
+    
+    // X轴
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.padding.left, this.padding.top + this.chartHeight);
+    this.ctx.lineTo(this.padding.left + this.chartWidth, this.padding.top + this.chartHeight);
+    this.ctx.stroke();
+    
+    // Y轴
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.padding.left, this.padding.top);
+    this.ctx.lineTo(this.padding.left, this.padding.top + this.chartHeight);
+    this.ctx.stroke();
+    
+    // X轴标签
+    this.ctx.fillStyle = '#666';
+    this.ctx.font = '12px Arial';
+    this.ctx.textAlign = 'center';
+    
+    const xTicks = 5;
+    for (let i = 0; i <= xTicks; i++) {
+      const x = this.padding.left + (this.chartWidth / xTicks) * i;
+      const time = new Date(xMin + (xMax - xMin) * (i / xTicks));
+      const label = time.toLocaleTimeString('zh-CN', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      this.ctx.fillText(label, x, this.padding.top + this.chartHeight + 20);
+    }
+    
+    // Y轴标签
+    this.ctx.textAlign = 'right';
+    this.ctx.textBaseline = 'middle';
+    
+    const yTicks = 5;
+    const invertY = this.options.invertY;
+    
+    for (let i = 0; i <= yTicks; i++) {
+      const y = invertY ? 
+        this.padding.top + (this.chartHeight / yTicks) * i :
+        this.padding.top + this.chartHeight - (this.chartHeight / yTicks) * i;
+      const value = yMin + (yMax - yMin) * (i / yTicks);
+      
+      let displayValue;
+      if (invertY) {
+        const minutes = Math.floor(value);
+        const seconds = Math.round((value - minutes) * 60);
+        displayValue = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      } else {
+        displayValue = value.toFixed(1);
+      }
+      
+      this.ctx.fillText(displayValue, this.padding.left - 10, y);
+    }
+  }
+
+  renderDataLine(dataset: Dataset, xMin: number, xMax: number, yMin: number, yMax: number) {
+    if (dataset.data.length === 0) return;
+    
+    this.ctx.strokeStyle = dataset.borderColor || '#3742fa';
+    this.ctx.lineWidth = dataset.borderWidth || 2;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    
+    if (dataset.data.length < 2) return;
+    
+    this.ctx.beginPath();
+    const points = dataset.data.map(d => this.getPointPosition(d, xMin, xMax, yMin, yMax));
+    
+    // 使用更高程度的平滑
+    const tension = 0.25; // 平滑系数
+    
+    this.ctx.moveTo(points[0].x, points[0].y);
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const curr = points[i];
+      const next = points[i + 1];
+      const prev = i > 0 ? points[i - 1] : curr;
+      const after = i < points.length - 2 ? points[i + 2] : next;
+      
+      // 计算切线向量
+      const tangentX = (after.x - prev.x) * tension;
+      const tangentY = (after.y - prev.y) * tension;
+      
+      // 使用切线计算控制点
+      const cp1x = curr.x + tangentX / 3;
+      const cp1y = curr.y + tangentY / 3;
+      const cp2x = next.x - tangentX / 3;
+      const cp2y = next.y - tangentY / 3;
+      
+      this.ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    }
+    
+    this.ctx.stroke();
+
+    // 绘制悬停点
+    if (this.hoveredPoint) {
+      this.ctx.fillStyle = dataset.borderColor || '#3742fa';
+      this.ctx.strokeStyle = '#fff';
+      this.ctx.lineWidth = 2;
+      
+      this.ctx.beginPath();
+      this.ctx.arc(this.hoveredPoint.screenX, this.hoveredPoint.screenY, 6, 0, 2 * Math.PI);
+      this.ctx.fill();
+      this.ctx.stroke();
+    }
+    }
+  }
+
+  getPointPosition(dataPoint: ChartPoint, xMin: number, xMax: number, yMin: number, yMax: number) {
+    const xRatio = (dataPoint.x.getTime() - xMin) / (xMax - xMin);
+    const yRatio = (dataPoint.y - yMin) / (yMax - yMin);
+    
+    const invertY = this.options.invertY;
+    
+    return {
+      x: this.padding.left + xRatio * this.chartWidth,
+      y: invertY ? 
+        this.padding.top + yRatio * this.chartHeight : 
+        this.padding.top + this.chartHeight - yRatio * this.chartHeight
+    };
+  }
+
+  renderTitle() {
+    if (this.options.plugins?.title?.display && this.options.plugins.title.text) {
+      this.ctx.fillStyle = '#333';
+      this.ctx.font = 'bold 16px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText(
+        this.options.plugins.title.text, 
+        this.width / 2, 
+        10
+      );
+    }
+  }
+
+  renderNoData() {
+    this.ctx.fillStyle = '#999';
+    this.ctx.font = '16px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('暂无数据', this.width / 2, this.height / 2);
+  }
+
+  setupMouseEvents() {
+    this.canvas.addEventListener('mousemove', this.boundMouseMove);
+    this.canvas.addEventListener('mouseleave', this.boundMouseLeave);
+  }
+
+  removeMouseEvents() {
+    this.canvas.removeEventListener('mousemove', this.boundMouseMove);
+    this.canvas.removeEventListener('mouseleave', this.boundMouseLeave);
+  }
+
+  onMouseMove(event: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const nearestPoint = this.findNearestPoint(x, y);
+    
+    if (nearestPoint && nearestPoint.distance < 30) {
+      this.showTooltip(nearestPoint, event.clientX, event.clientY);
+      if (this.hoveredPoint?.index !== nearestPoint.index) {
+        this.hoveredPoint = nearestPoint;
+        this.render();
+      }
+    } else {
+      this.hideTooltip();
+      if (this.hoveredPoint) {
+        this.hoveredPoint = null;
+        this.render();
+      }
+    }
+  }
+
+  onMouseLeave() {
+    this.hideTooltip();
+    if (this.hoveredPoint) {
+      this.hoveredPoint = null;
+      this.render();
+    }
+  }
+
+  findNearestPoint(mouseX: number, mouseY: number) {
+    if (!this.data.datasets || !this.data.datasets[0] || !this.data.datasets[0].data) {
+      return null;
+    }
+
+    const dataset = this.data.datasets[0];
+    let nearestPoint = null;
+    let minDistance = Infinity;
+
+    const xValues = dataset.data.map(d => d.x.getTime());
+    const yValues = dataset.data.map(d => d.y);
+    
+    const xMin = Math.min(...xValues);
+    const xMax = Math.max(...xValues);
+    
+    let yMin, yMax;
+    if (this.options.yAxisRange) {
+      yMin = this.options.yAxisRange.min;
+      yMax = this.options.yAxisRange.max;
+    } else {
+      yMin = Math.min(...yValues) * 0.9;
+      yMax = Math.max(...yValues) * 1.1;
+    }
+
+    for (let i = 0; i < dataset.data.length; i++) {
+      const dataPoint = dataset.data[i];
+      const screenPoint = this.getPointPosition(dataPoint, xMin, xMax, yMin, yMax);
+      
+      const distance = Math.sqrt(
+        Math.pow(screenPoint.x - mouseX, 2) + 
+        Math.pow(screenPoint.y - mouseY, 2)
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestPoint = {
+          data: dataPoint,
+          index: i,
+          distance: distance,
+          screenX: screenPoint.x,
+          screenY: screenPoint.y
+        };
+      }
+    }
+
+    return nearestPoint;
+  }
+
+  showTooltip(point: { data: ChartPoint; index: number; distance: number; screenX: number; screenY: number }, clientX: number, clientY: number) {
+    if (!this.tooltip) {
+      this.tooltip = document.createElement('div');
+      this.tooltip.style.cssText = `
+        position: fixed;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+        line-height: 1.4;
+      `;
+      document.body.appendChild(this.tooltip);
+    }
+
+    const time = point.data.x.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    const dataset = this.data.datasets[0];
+    let valueText;
+    if (dataset.label) {
+      if (dataset.label.includes('心率')) {
+        valueText = Math.round(point.data.y) + ' bpm';
+      } else if (dataset.label.includes('配速') || dataset.label.includes('速度')) {
+        const speedKmH = point.data.originalSpeed;
+        if (typeof speedKmH === 'number') {
+          const paceMinKm = point.data.y;
+          const paceFormatted = formatMinutesToMS(paceMinKm);
+          valueText = `${paceFormatted} min/km (${speedKmH.toFixed(2)} km/h)`;
+        } else {
+          valueText = formatMinutesToMS(point.data.y) + ' min/km';
+        }
+      } else if (dataset.label.includes('功率')) {
+        valueText = Math.round(point.data.y) + ' W';
+      } else {
+        valueText = point.data.y.toFixed(1);
+      }
+    } else {
+      valueText = point.data.y.toFixed(1);
+    }
+
+    // 需要从外部传入翻译函数，暂时保持英文
+  const tooltipContent = `
+      <div>时间: ${time}</div>
+      <div>数值: ${valueText}</div>
+      <div>数据点: ${point.index + 1}/${this.data.datasets[0].data.length}</div>
+    `;
+
+    this.tooltip.innerHTML = tooltipContent;
+
+    const tooltipRect = this.tooltip.getBoundingClientRect();
+    let left = clientX + 10;
+    let top = clientY - 10;
+
+    if (left + tooltipRect.width > window.innerWidth) {
+      left = clientX - tooltipRect.width - 10;
+    }
+    if (top < 0) {
+      top = clientY + 20;
+    }
+
+    this.tooltip.style.left = left + 'px';
+    this.tooltip.style.top = top + 'px';
+    this.tooltip.style.display = 'block';
+  }
+
+  hideTooltip() {
+    if (this.tooltip) {
+      this.tooltip.style.display = 'none';
+    }
+  }
+
+  destroy() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.removeMouseEvents();
+    this.hideTooltip();
+    if (this.tooltip && this.tooltip.parentNode) {
+      this.tooltip.parentNode.removeChild(this.tooltip);
+    }
+  }
+}
+
+interface ChartComponentProps {
+  workouts: WorkoutData[];
+  showOutlierFilter?: boolean;
+}
+
+export function Charts({ workouts, showOutlierFilter = false }: ChartComponentProps) {
+  const { t } = useLanguage();
+  const [filterOutliers, setFilterOutliers] = useState(false);
+  const chartRefs = useRef<{ [key: string]: SimpleChart }>({});
+
+  useEffect(() => {
+    const chartsSnapshot = chartRefs.current;
+    return () => {
+      Object.values(chartsSnapshot).forEach(chart => chart?.destroy());
+    };
+  }, []);
+
+  // 从 workout 数据中提取图表数据
+  const extractChartData = (workout: WorkoutData) => {
+    const charts: { [key: string]: ChartPoint[] } = {};
+    const yAxisRanges: { [key: string]: { min: number; max: number } } = {};
+
+    // 从 sessions 或 activity 中获取 records
+    let allRecords: Record<string, unknown>[] = [];
+    
+    if (workout.sessions) {
+      workout.sessions.forEach(session => {
+        if (session.allRecords && Array.isArray(session.allRecords)) {
+          allRecords = allRecords.concat(session.allRecords);
+        } else if (Array.isArray(session.laps)) {
+          session.laps.forEach((lap: Record<string, unknown>) => {
+            if (Array.isArray(lap.records)) {
+              allRecords = allRecords.concat(lap.records);
+            }
+          });
+        }
+      });
+    }
+
+    if (workout.records) {
+      allRecords = allRecords.concat(workout.records);
+    }
+
+    if (allRecords.length === 0) return charts;
+
+    // 处理心率数据
+    const heartRateData = allRecords
+      .filter(record => record.heart_rate && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.heart_rate as number
+      }));
+
+    if (heartRateData.length > 0) {
+      charts['heart_rate'] = filterOutliers ? filterOutlierData(heartRateData) : heartRateData;
+    }
+
+
+
+    // 处理功率数据
+    const powerData = allRecords
+      .filter(record => record.power && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.power as number
+      }));
+
+    if (powerData.length > 0) {
+      charts['power'] = filterOutliers ? filterOutlierData(powerData) : powerData;
+    }
+
+    // 处理海拔数据
+    const altitudeData = allRecords
+      .filter(record => record.altitude && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.altitude as number
+      }));
+
+    if (altitudeData.length > 0) {
+      charts['altitude'] = filterOutliers ? filterOutlierData(altitudeData) : altitudeData;
+    }
+
+    // 处理步频/踏频数据
+    const cadenceData = allRecords
+      .filter(record => record.cadence && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: (record.cadence as number) * 2  // 乘以2因为是两只脚的步频
+      }));
+
+    if (cadenceData.length > 0) {
+      // 计算统计信息
+      const stats = calculateStats(cadenceData);
+      const processedData = cadenceData.map(point => ({
+        ...point,
+        y: Math.max(point.y, stats.min) // 限制最小值
+      }));
+      const filteredData = filterOutliers ? filterOutlierData(processedData) : processedData;
+      charts['cadence'] = filteredData;
+      yAxisRanges['cadence'] = { min: stats.min, max: stats.max };
+    }
+
+    // 处理速度数据（转换为配速：分钟/公里）
+    const speedData = allRecords
+      .filter(record => typeof record.speed === 'number' && record.timestamp && record.speed > 0)
+      .map(record => {
+        // 输出原始速度数据以进行调试
+        console.log('Raw speed value:', record.speed);
+        // 原始数据已经是 km/h，直接用来计算配速
+        const speedKmH = record.speed as number;
+        const paceMinKm = 60 / speedKmH;
+        console.log('Pace in min/km:', paceMinKm);
+        return {
+          x: new Date((record.timestamp as number) * 1000),
+          y: paceMinKm,
+          originalSpeed: speedKmH // 保存原始速度值以便显示
+        };
+      });
+
+    if (speedData.length > 0) {
+      charts['speed'] = filterOutliers ? filterOutlierData(speedData) : speedData;
+    }
+
+    // 处理温度数据
+    const temperatureData = allRecords
+      .filter(record => record.temperature && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.temperature as number
+      }));
+
+    if (temperatureData.length > 0) {
+      charts['temperature'] = filterOutliers ? filterOutlierData(temperatureData) : temperatureData;
+    }
+
+    // 处理距离数据
+    const distanceData = allRecords
+      .filter(record => typeof record.distance === 'number' && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: (record.distance as number) / 1000 // 转换为公里
+      }));
+
+    if (distanceData.length > 0) {
+      charts['distance'] = filterOutliers ? filterOutlierData(distanceData) : distanceData;
+    }
+
+    // 处理垂直速度数据
+    const verticalSpeedData = allRecords
+      .filter(record => record.vertical_speed && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.vertical_speed as number
+      }));
+
+    if (verticalSpeedData.length > 0) {
+      charts['vertical_speed'] = filterOutliers ? filterOutlierData(verticalSpeedData) : verticalSpeedData;
+    }
+
+    // 处理坡度数据
+    const gradeData = allRecords
+      .filter(record => record.grade && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: record.grade as number
+      }));
+
+    if (gradeData.length > 0) {
+      charts['grade'] = filterOutliers ? filterOutlierData(gradeData) : gradeData;
+    }
+
+    // 处理计时器时间数据
+    const timerTimeData = allRecords
+      .filter(record => record.timer_time && record.timestamp)
+      .map(record => ({
+        x: new Date((record.timestamp as number) * 1000),
+        y: (record.timer_time as number) / 60 // 转换为分钟
+      }));
+
+    if (timerTimeData.length > 0) {
+      charts['timer_time'] = filterOutliers ? filterOutlierData(timerTimeData) : timerTimeData;
+    }
+
+    return { charts, yAxisRanges };
+  };
+
+  // 过滤异常值（3-sigma 规则）
+  const filterOutlierData = (data: ChartPoint[]): ChartPoint[] => {
+    if (data.length < 3) return data;
+
+    const values = data.map(d => d.y);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+    
+    const threshold = 2 * stdDev; // 2-sigma instead of 3-sigma as per user feedback
+
+    return data.filter(d => Math.abs(d.y - mean) <= threshold);
+  };
+
+  const renderChart = (
+    canvasRef: React.RefObject<HTMLCanvasElement>,
+    chartData: ChartPoint[],
+    type: string,
+    title: string,
+    yAxisRange?: { min: number; max: number }
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas || chartData.length === 0) return;
+
+    // 清理之前的图表
+    const chartKey = `${type}_chart`;
+    if (chartRefs.current[chartKey]) {
+      chartRefs.current[chartKey].destroy();
+    }
+
+    const config: ChartConfig = {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: chartData,
+          label: title,
+          borderColor: {
+            'heart_rate': '#ff4757',
+            'power': '#3742fa',
+            'altitude': '#2ed573',
+            'cadence': '#1e90ff',
+            'speed': '#ff6b81',
+            'temperature': '#ff7f50',
+            'distance': '#a8e6cf',
+            'vertical_speed': '#dfe6e9',
+            'grade': '#fd79a8',
+            'timer_time': '#6c5ce7'
+          }[type] || '#3742fa',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: title
+          }
+        },
+        invertY: type === 'speed', // 配速图表Y轴反转,
+        ...(yAxisRange && { yAxisRange })
+      }
+    };
+
+    chartRefs.current[chartKey] = new SimpleChart(canvas, config);
+  };
+
+  return (
+    <div className="space-y-6">
+      {showOutlierFilter && (
+        <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={filterOutliers}
+              onChange={(e) => setFilterOutliers(e.target.checked)}
+              className="mr-2"
+            />
+            {t('filter_outliers')}
+          </label>
+          <span className="text-sm text-gray-600">
+            {t('filter_outliers_desc')}
+          </span>
+        </div>
+      )}
+
+      {workouts.map((workout, workoutIndex) => {
+        const result = extractChartData(workout);
+        const chartData = result.charts;
+        const yAxisRanges = result.yAxisRanges as { [key: string]: { min: number; max: number } };
+        
+        return (
+          <div key={workoutIndex} className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {workout.fileName} - {t('chart_analysis')}
+            </h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {Object.entries(chartData).map(([type, data]) => {
+                const titles = {
+                  heart_rate: t('heart_rate'),
+                  power: t('power'),
+                  altitude: t('altitude'),
+                  cadence: t('cadence'),
+                  speed: t('speed'),
+                  temperature: t('temperature'),
+                  distance: t('distance'),
+                  vertical_speed: t('vertical_speed'),
+                  grade: t('grade'),
+                  timer_time: t('timer_time')
+                };
+
+                const units = {
+                  heart_rate: 'bpm',
+                  power: 'W',
+                  altitude: 'm',
+                  cadence: 'spm',
+                  speed: 'min/km',
+                  temperature: '°C',
+                  distance: 'km',
+                  vertical_speed: 'm/s',
+                  grade: '%',
+                  timer_time: 'min'
+                };
+                
+                return (
+                  <div key={type} className="space-y-2">
+                    <canvas
+                      ref={(el) => {
+                        if (el) {
+                          renderChart(
+                            { current: el },
+                            data,
+                            type,
+                            `${titles[type as keyof typeof titles]} (${units[type as keyof typeof units]})`,
+                            yAxisRanges[type]
+                          );
+                        }
+                      }}
+                      className="w-full h-52 border rounded"
+                    />
+                    <p className="text-sm text-gray-500 text-center">
+                      {t('data_points')}: {data.length}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {Object.keys(chartData).length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                {t('no_chart_data')}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

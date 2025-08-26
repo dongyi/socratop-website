@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { WorkoutSession, WorkoutRecord } from './WorkoutAnalyzer';
 import { ChartCanvas } from './ChartCanvas';
 
 interface SessionDetailsProps {
-  session: WorkoutSession & { workoutIndex: number; sessionIndex: number; workout: any };
+  session: WorkoutSession & { workoutIndex: number; sessionIndex: number; workout: { fileName: string; [key: string]: unknown } };
   records: WorkoutRecord[];
-  sessionKey: string;
+  sessionKey?: string;
 }
 
-export function SessionDetails({ session, records, sessionKey }: SessionDetailsProps) {
+export function SessionDetails({ session, records }: SessionDetailsProps) {
   const [filterOutliers, setFilterOutliers] = useState(false);
 
   const formatTimestamp = (timestamp?: number) => {

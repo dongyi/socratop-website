@@ -20,7 +20,7 @@ export function SessionList({ workouts }: SessionListProps) {
 
   // Collect and sort all sessions
   const getAllSessions = (): SessionWithMetadata[] => {
-    let allSessions: SessionWithMetadata[] = [];
+    const allSessions: SessionWithMetadata[] = [];
     
     workouts.forEach((workout, workoutIndex) => {
       // Normalize workout data if needed
@@ -165,7 +165,7 @@ export function SessionList({ workouts }: SessionListProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {allSessions.map((session, index) => {
+            {allSessions.map((session) => {
               const sessionKey = `${session.workoutIndex}-${session.sessionIndex}`;
               const isExpanded = expandedSession === sessionKey;
               const records = session.allRecords || [];

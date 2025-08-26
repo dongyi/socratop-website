@@ -1,17 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileUpload } from './FileUpload';
 import { WorkoutSummary } from './WorkoutSummary';
 import { SessionList } from './SessionList';
 import { DebugPanel } from './DebugPanel';
 
-declare global {
-  interface Window {
-    FitParser?: any;
-    FitFileParser?: any;
-  }
-}
+// 不再需要全局声明，改用直接import
 
 export interface WorkoutRecord {
   timestamp?: number;
@@ -27,7 +22,7 @@ export interface WorkoutRecord {
   stance_time_balance?: number;
   vertical_oscillation?: number;
   vertical_ratio?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface WorkoutSession {
@@ -46,7 +41,7 @@ export interface WorkoutSession {
     records?: WorkoutRecord[];
   }>;
   allRecords?: WorkoutRecord[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface WorkoutData {
@@ -58,9 +53,9 @@ export interface WorkoutData {
   activity?: {
     sessions?: WorkoutSession[];
     records?: WorkoutRecord[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface DebugLog {
@@ -71,15 +66,17 @@ export interface DebugLog {
   stack?: string | null;
 }
 
-export function WorkoutAnalyzer() {
+function WorkoutAnalyzerComponent() {
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
-  const [fitParserReady, setFitParserReady] = useState(false);
+  const [fitParserReady, setFitParserReady] = useState<boolean>(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [fitParserClass, setFitParserClass] = useState<any>(null);
   
   // Debug logging function
-  const addDebugLog = useCallback((message: string, data?: any) => {
+  const addDebugLog = useCallback((message: string, data?: unknown) => {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry: DebugLog = {
       timestamp,
@@ -96,48 +93,56 @@ export function WorkoutAnalyzer() {
     }
   }, []);
 
-  const addErrorLog = useCallback((message: string, error?: any) => {
+  const addErrorLog = useCallback((message: string, error?: unknown) => {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry: DebugLog = {
       timestamp,
       message: `❌ ERROR: ${message}`,
       error: error ? error.toString() : null,
-      stack: error?.stack || null
+  stack: typeof error === 'object' && error !== null && 'stack' in error ? (error as { stack?: string }).stack || null : null
     };
     
     setDebugLogs(prev => [...prev, logEntry]);
     console.error(`[DEBUG ERROR] ${message}`, error);
   }, []);
 
-  // Load FIT parser
+  // Load FIT parser using ES6 import
   const loadFitParser = useCallback(async () => {
     try {
-      addDebugLog('尝试从 skypack 加载 FitParser...');
-      const module = await import('https://cdn.skypack.dev/fit-file-parser');
-      window.FitParser = module.default || module;
-      addDebugLog('FitParser 加载成功', { type: typeof window.FitParser });
-      return true;
-    } catch (error) {
-      addErrorLog('从 skypack 加载 FitParser 失败', error);
-      try {
-        addDebugLog('尝试从 jsdelivr 加载 FitParser...');
-        const response = await fetch('https://cdn.jsdelivr.net/npm/fit-file-parser@1.9.3/dist/fit-parser.min.js');
-        const code = await response.text();
-        eval(code);
-        window.FitParser = window.FitFileParser || window.FitParser;
-        addDebugLog('FitParser 从 jsdelivr 加载成功', { type: typeof window.FitParser });
+      addDebugLog('通过 npm 包加载 FitParser...');
+      
+      // 使用动态import加载npm包
+      const FitFileParser = await import('fit-file-parser') as { default?: unknown; [key: string]: unknown };
+      const ParserClass = FitFileParser.default || FitFileParser;
+      
+      if (ParserClass && typeof ParserClass === 'function') {
+        setFitParserClass(ParserClass);
+        addDebugLog('FitParser 从 npm 包加载成功', { 
+          type: typeof ParserClass,
+          name: ParserClass.name 
+        });
         return true;
-      } catch (error2) {
-        addErrorLog('从 jsdelivr 加载 FitParser 也失败', error2);
+      } else {
+        addErrorLog('npm 包加载成功但未找到构造函数', {
+          default: typeof FitFileParser.default,
+          module: typeof FitFileParser,
+          keys: Object.keys(FitFileParser)
+        });
         return false;
       }
+    } catch (error) {
+      addErrorLog('从 npm 包加载 FitParser 失败', error);
+      return false;
     }
   }, [addDebugLog, addErrorLog]);
+
+  // 不再需要备用解析器，npm包更可靠
 
   // Initialize FIT parser on component mount
   useEffect(() => {
     const initFitParser = async () => {
       addDebugLog('开始初始化 FitParser...');
+      
       const ready = await loadFitParser();
       setFitParserReady(ready);
       
@@ -152,7 +157,7 @@ export function WorkoutAnalyzer() {
   }, [loadFitParser, addDebugLog, addErrorLog]);
 
   // Parse FIT file
-  const parseFitFile = useCallback(async (file: File): Promise<any> => {
+  const parseFitFile = useCallback(async (file: File): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       addDebugLog('创建 FileReader 开始读取文件');
       const reader = new FileReader();
@@ -160,14 +165,20 @@ export function WorkoutAnalyzer() {
       reader.onload = (e) => {
         try {
           addDebugLog('文件读取完成，开始创建 FitParser');
-          addDebugLog('文件大小 (bytes)', e.target?.result?.byteLength);
+          addDebugLog('文件大小 (bytes)', typeof e.target?.result === 'object' && e.target?.result !== null && 'byteLength' in e.target.result ? (e.target.result as ArrayBuffer).byteLength : null);
           
-          const FitParserClass = window.FitParser;
-          if (!FitParserClass) {
-            throw new Error('FitParser not loaded');
+          // 使用状态中的FitParser
+          if (!fitParserClass || typeof fitParserClass !== 'function') {
+            addErrorLog('FitParser 未正确加载或不是构造函数', { 
+              fitParserClass: typeof fitParserClass,
+              available: !!fitParserClass
+            });
+            throw new Error('FitParser not loaded or not a constructor');
           }
           
-          const fitParser = new FitParserClass({
+          addDebugLog('FitParser 类型检查通过', { type: typeof fitParserClass });
+          
+          const fitParser = new fitParserClass({
             force: true,
             speedUnit: 'km/h',
             lengthUnit: 'm',
@@ -187,7 +198,7 @@ export function WorkoutAnalyzer() {
 
           addDebugLog('开始调用 fitParser.parse()');
           
-          fitParser.parse(e.target?.result, (error: any, data: any) => {
+          fitParser.parse(e.target?.result as ArrayBuffer, (error: Error | null, data: unknown) => {
             if (error) {
               addErrorLog('FitParser.parse() 返回错误', error);
               reject(error);
@@ -221,16 +232,18 @@ export function WorkoutAnalyzer() {
       addDebugLog('开始以 ArrayBuffer 形式读取文件');
       reader.readAsArrayBuffer(file);
     });
-  }, [addDebugLog, addErrorLog]);
+  }, [addDebugLog, addErrorLog, fitParserClass]);
 
   // Normalize workout data
-  const normalizeWorkoutData = useCallback((workout: any) => {
+  const normalizeWorkoutData = useCallback((workout: unknown) => {
     // 如果数据在 activity 中，提取出来
-    if (workout.activity) {
-      const activity = workout.activity;
+    if (typeof workout === 'object' && workout !== null && 'activity' in workout) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activity = (workout as any).activity;
       
-      if (!workout.sessions && activity.sessions) {
-        workout.sessions = activity.sessions;
+      if (!('sessions' in workout) && activity.sessions) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (workout as any).sessions = activity.sessions;
       }
       
       // 从 laps 中查找 records（COROS 数据的常见位置）
@@ -262,17 +275,28 @@ export function WorkoutAnalyzer() {
       addDebugLog('FitParser 尚未加载完成，等待加载...');
       setError('正在加载解析器，请稍等...');
       
-      // 等待FitParser加载完成
+      // 等待FitParser加载完成，但也检查全局变量
       let attempts = 0;
       while (!fitParserReady && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
+        
+        // 每次循环都检查是否已经加载完成
+        if (fitParserClass && !fitParserReady) {
+          addDebugLog('在等待过程中发现 FitParser 已可用');
+          setFitParserReady(true);
+          break;
+        }
       }
       
-      if (!fitParserReady) {
+      if (!fitParserReady && !fitParserClass) {
         addErrorLog('FitParser 加载超时');
         setError('解析器加载失败，请刷新页面重试');
         return;
+      } else if (fitParserClass) {
+        // 最后一次检查
+        setFitParserReady(true);
+        setError('');
       }
     }
 
@@ -305,7 +329,7 @@ export function WorkoutAnalyzer() {
           fileName: file.name,
           fileSize: file.size,
           lastModified: new Date(file.lastModified),
-          ...fitData
+          ...(typeof fitData === 'object' && fitData !== null ? fitData : {})
         };
         
         normalizeWorkoutData(workoutData);
@@ -323,7 +347,7 @@ export function WorkoutAnalyzer() {
     if (newWorkouts.length > 0) {
       setWorkouts(prev => [...prev, ...newWorkouts]);
     }
-  }, [fitParserReady, parseFitFile, normalizeWorkoutData, addDebugLog, addErrorLog]);
+  }, [fitParserReady, fitParserClass, parseFitFile, normalizeWorkoutData, addDebugLog, addErrorLog]);
 
   const clearDebugLogs = useCallback(() => {
     setDebugLogs([]);
@@ -360,6 +384,15 @@ export function WorkoutAnalyzer() {
             disabled={!fitParserReady}
           />
           
+          {!fitParserReady && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-blue-700">正在加载FIT文件解析器，请稍等...</p>
+              <div className="mt-2 text-sm text-blue-600">
+                正在尝试从CDN加载必要的库文件
+              </div>
+            </div>
+          )}
+          
           {error && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-700">{error}</p>
@@ -387,3 +420,5 @@ export function WorkoutAnalyzer() {
     </div>
   );
 }
+
+export { WorkoutAnalyzerComponent as WorkoutAnalyzer };

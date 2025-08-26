@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkoutRecord } from './WorkoutAnalyzer';
 
 interface ChartCanvasProps {
@@ -24,65 +24,65 @@ interface DataPoint {
   isOutlier?: boolean;
 }
 
+// Filter outliers using 3-sigma rule
+const filterOutliersFromData = (data: DataPoint[], sigmaThreshold = 2): DataPoint[] => {
+  if (!data || data.length === 0) return data;
+  
+  // Calculate mean and standard deviation
+  const values = data.map(d => d.y);
+  const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  
+  // Calculate thresholds
+  const upperThreshold = mean + sigmaThreshold * stdDev;
+  const lowerThreshold = mean - sigmaThreshold * stdDev;
+  
+  // Mark outliers
+  return data.map(point => ({
+    ...point,
+    isOutlier: point.y > upperThreshold || point.y < lowerThreshold
+  }));
+};
+
+// Calculate moving average for smoothing
+const calculateMovingAverage = (data: DataPoint[], windowSize = 15): DataPoint[] => {
+  if (data.length < windowSize) return data;
+  
+  const smoothedData: DataPoint[] = [];
+  
+  // Keep first few points
+  for (let i = 0; i < Math.floor(windowSize / 2); i++) {
+    smoothedData.push(data[i]);
+  }
+  
+  // Calculate moving average
+  for (let i = Math.floor(windowSize / 2); i < data.length - Math.floor(windowSize / 2); i++) {
+    let sum = 0;
+    for (let j = i - Math.floor(windowSize / 2); j <= i + Math.floor(windowSize / 2); j++) {
+      sum += data[j].y;
+    }
+    smoothedData.push({
+      x: data[i].x,
+      y: sum / windowSize
+    });
+  }
+  
+  // Keep last few points
+  for (let i = data.length - Math.floor(windowSize / 2); i < data.length; i++) {
+    smoothedData.push(data[i]);
+  }
+  
+  return smoothedData;
+};
+
 export function ChartCanvas({ records, fieldName, options, filterOutliers, width, height }: ChartCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hoveredPoint, setHoveredPoint] = useState<any>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<{ data: DataPoint; index: number; distance: number; screenX: number; screenY: number } | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
 
-  // Filter outliers using 3-sigma rule
-  const filterOutliersFromData = (data: DataPoint[], sigmaThreshold = 2): DataPoint[] => {
-    if (!data || data.length === 0) return data;
-    
-    // Calculate mean and standard deviation
-    const values = data.map(d => d.y);
-    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-    const stdDev = Math.sqrt(variance);
-    
-    // Calculate thresholds
-    const upperThreshold = mean + sigmaThreshold * stdDev;
-    const lowerThreshold = mean - sigmaThreshold * stdDev;
-    
-    // Mark outliers
-    return data.map(point => ({
-      ...point,
-      isOutlier: point.y > upperThreshold || point.y < lowerThreshold
-    }));
-  };
-
-  // Calculate moving average for smoothing
-  const calculateMovingAverage = (data: DataPoint[], windowSize = 15): DataPoint[] => {
-    if (data.length < windowSize) return data;
-    
-    const smoothedData: DataPoint[] = [];
-    
-    // Keep first few points
-    for (let i = 0; i < Math.floor(windowSize / 2); i++) {
-      smoothedData.push(data[i]);
-    }
-    
-    // Calculate moving average
-    for (let i = Math.floor(windowSize / 2); i < data.length - Math.floor(windowSize / 2); i++) {
-      let sum = 0;
-      for (let j = i - Math.floor(windowSize / 2); j <= i + Math.floor(windowSize / 2); j++) {
-        sum += data[j].y;
-      }
-      smoothedData.push({
-        x: data[i].x,
-        y: sum / windowSize
-      });
-    }
-    
-    // Keep last few points
-    for (let i = data.length - Math.floor(windowSize / 2); i < data.length; i++) {
-      smoothedData.push(data[i]);
-    }
-    
-    return smoothedData;
-  };
-
   // Prepare chart data
-  const prepareData = (): { data: DataPoint[], filteredCount: number } => {
+  const prepareData = useCallback((): { data: DataPoint[], filteredCount: number } => {
     // Find possible field names
     const possibleFields = [
       fieldName,
@@ -116,7 +116,6 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
     if (data.length === 0) return { data: [], filteredCount: 0 };
 
     // Apply outlier detection
-    const originalCount = data.length;
     data = filterOutliersFromData(data);
     
     // Remove outliers if filtering is enabled
@@ -133,10 +132,10 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
     }
 
     return { data, filteredCount };
-  };
+  }, [records, fieldName, options, filterOutliers]);
 
   // Draw chart
-  const drawChart = () => {
+  const drawChart = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -176,8 +175,8 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
     const yValues = data.map(d => d.y);
     const xMin = Math.min(...xValues);
     const xMax = Math.max(...xValues);
-    let yMin = Math.min(...yValues) * 0.9;
-    let yMax = Math.max(...yValues) * 1.1;
+    const yMin = Math.min(...yValues) * 0.9;
+    const yMax = Math.max(...yValues) * 1.1;
 
     // Function to get point position
     const getPointPosition = (point: DataPoint) => {
@@ -341,7 +340,7 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
         ctx.stroke();
       }
     }
-  };
+  }, [prepareData, hoveredPoint, width, height, filterOutliers, options.color, options.invertY, options.label, options.title]);
 
   // Handle mouse move for hover effects
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -360,8 +359,8 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
     const yValues = data.map(d => d.y);
     const xMin = Math.min(...xValues);
     const xMax = Math.max(...xValues);
-    let yMin = Math.min(...yValues) * 0.9;
-    let yMax = Math.max(...yValues) * 1.1;
+    const yMin = Math.min(...yValues) * 0.9;
+    const yMax = Math.max(...yValues) * 1.1;
 
     const padding = { top: 40, right: 20, bottom: 60, left: 60 };
     const chartWidth = width - padding.left - padding.right;
@@ -449,7 +448,7 @@ export function ChartCanvas({ records, fieldName, options, filterOutliers, width
   // Redraw chart when data changes
   useEffect(() => {
     drawChart();
-  }, [records, fieldName, options, filterOutliers, hoveredPoint, width, height]);
+  }, [drawChart]);
 
   return (
     <div className="relative">
