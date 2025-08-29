@@ -51,7 +51,7 @@ export default function AppleSignInButton({ className = "" }: AppleSignInButtonP
       window.AppleID.auth.init({
         clientId: 'com.socratop.cadence.web',
         scope: 'name email',
-        redirectURI: 'https://socratop.com/auth/apple/callback',
+        redirectURI: 'https://kduaahvzsntfbzzlcunb.supabase.co/auth/v1/callback',
         state: 'signin',
         usePopup: true
       });
