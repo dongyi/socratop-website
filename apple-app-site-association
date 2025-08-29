@@ -1,0 +1,11 @@
+{
+    "applinks": {
+        "details": [{
+            "appIDs": ["7TML3NFBTM.com.socratop.cadence"],
+            "components": [{
+                "/": "/strava/callback",
+                "comment": "Strava OAuth callback"
+            }]
+        }]
+    }
+}

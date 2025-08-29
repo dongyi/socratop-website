@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageToggle from "@/components/LanguageToggle";
+import Header from "@/components/Header";
 
 export default function Home() {
   const { t, language } = useLanguage();
@@ -45,8 +45,8 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LanguageToggle />
-      <div className="min-h-screen bg-black text-white">
+      <Header />
+      <div className="min-h-screen bg-black text-white pt-16">
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
