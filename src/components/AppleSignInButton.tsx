@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface AppleIDConfig {
   clientId: string;
@@ -69,15 +70,23 @@ export default function AppleSignInButton({ className = "" }: AppleSignInButtonP
       
       // 处理登录成功
       if (data.authorization) {
-        // 存储用户信息
-        localStorage.setItem('apple_auth', JSON.stringify({
-          token: data.authorization.id_token,
-          user: data.user,
-          timestamp: Date.now()
-        }));
+        console.log('Apple ID Token:', data.authorization.id_token);
         
-        // 刷新页面或更新 UI 状态
-        window.location.reload();
+        // 使用 Supabase signInWithIdToken
+        const { data: authData, error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: data.authorization.id_token,
+        });
+
+        if (error) {
+          console.error('Supabase auth error:', error.message);
+          console.error('Full error:', error);
+          return;
+        }
+
+        console.log('Supabase auth success:', authData);
+        
+        // 认证状态会通过 AuthContext 自动更新，无需刷新页面
       }
     } catch (error) {
       console.error('Apple Sign-In Error:', error);

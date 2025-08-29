@@ -1,24 +1,17 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface AppleUser {
-  name?: {
-    firstName: string;
-    lastName: string;
-  };
-  email?: string;
-}
+import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthState {
   isAuthenticated: boolean;
-  user: AppleUser | null;
-  token: string | null;
+  user: User | null;
+  loading: boolean;
 }
 
 interface AuthContextType extends AuthState {
-  signOut: () => void;
-  refreshAuthState: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,52 +32,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
-    token: null
+    loading: true
   });
 
-  const refreshAuthState = () => {
-    if (typeof window !== 'undefined') {
-      const storedAuth = localStorage.getItem('apple_auth');
-      if (storedAuth) {
-        try {
-          const parsed = JSON.parse(storedAuth);
-          // 检查 token 是否过期（24小时）
-          const isExpired = Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000;
-          
-          if (!isExpired) {
-            setAuthState({
-              isAuthenticated: true,
-              user: parsed.user,
-              token: parsed.token
-            });
-          } else {
-            localStorage.removeItem('apple_auth');
-          }
-        } catch (error) {
-          console.error('Error parsing stored auth:', error);
-          localStorage.removeItem('apple_auth');
-        }
-      }
-    }
-  };
-
-  const signOut = () => {
-    localStorage.removeItem('apple_auth');
-    setAuthState({
-      isAuthenticated: false,
-      user: null,
-      token: null
-    });
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   useEffect(() => {
-    refreshAuthState();
+    // 获取初始会话
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setAuthState({
+        isAuthenticated: !!session,
+        user: session?.user ?? null,
+        loading: false
+      });
+    };
+
+    getInitialSession();
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session?.user);
+        setAuthState({
+          isAuthenticated: !!session,
+          user: session?.user ?? null,
+          loading: false
+        });
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const contextValue: AuthContextType = {
     ...authState,
-    signOut,
-    refreshAuthState
+    signOut
   };
 
   return (

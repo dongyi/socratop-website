@@ -27,7 +27,7 @@ export default function Header() {
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-300">
-                  {user?.name ? `${user.name.firstName} ${user.name.lastName}` : user?.email || 'User'}
+                  {user?.user_metadata?.full_name || user?.email || 'User'}
                 </span>
                 <button
                   onClick={signOut}
