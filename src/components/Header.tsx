@@ -2,12 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppleSignInButton from './AppleSignInButton';
 import LanguageToggle from './LanguageToggle';
-import { User, Activity, BarChart3, Home } from 'lucide-react';
+import { User, BarChart3, Home } from 'lucide-react';
 
 export default function Header() {
   const { isAuthenticated, user, signOut } = useAuth();

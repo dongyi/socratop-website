@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
@@ -20,8 +20,8 @@ import {
 
 const equipmentSchema = z.object({
   name: z.string().min(1, '请输入装备名称').max(100, '名称不能超过100个字符'),
-  category: z.enum(['shoes', 'watch', 'bike', 'clothing', 'accessories'], {
-    required_error: '请选择装备类别',
+  category: z.enum(['shoes', 'watch', 'bike', 'clothing', 'accessories']).refine((val) => val, {
+    message: '请选择装备类别',
   }),
   brand: z.string().max(50, '品牌不能超过50个字符').optional().or(z.literal('')),
   model: z.string().max(100, '型号不能超过100个字符').optional().or(z.literal('')),
@@ -71,13 +71,7 @@ export const EquipmentManager = () => {
     resolver: zodResolver(equipmentSchema),
   });
 
-  useEffect(() => {
-    if (user) {
-      loadEquipment();
-    }
-  }, [user]);
-
-  const loadEquipment = async () => {
+  const loadEquipment = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -97,7 +91,13 @@ export const EquipmentManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadEquipment();
+    }
+  }, [user, loadEquipment]);
 
   const onSubmit = async (data: EquipmentFormData) => {
     if (!user) return;
@@ -152,7 +152,7 @@ export const EquipmentManager = () => {
     setEditingId(item.id);
     setShowForm(true);
     setValue('name', item.name);
-    setValue('category', item.category as any);
+    setValue('category', item.category as 'shoes' | 'watch' | 'bike' | 'clothing' | 'accessories');
     setValue('brand', item.brand || '');
     setValue('model', item.model || '');
     setValue('purchase_date', item.purchase_date || '');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
@@ -14,16 +14,11 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-interface UserProfileData {
-  display_name: string;
-  avatar_url?: string;
-}
 
 export const UserProfile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<UserProfileData | null>(null);
 
   const {
     register,
@@ -34,13 +29,7 @@ export const UserProfile = () => {
     resolver: zodResolver(profileSchema),
   });
 
-  useEffect(() => {
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -56,7 +45,6 @@ export const UserProfile = () => {
       }
 
       if (data) {
-        setProfile(data);
         setValue('display_name', data.display_name || '');
       } else {
         // 如果没有资料记录，创建一个
@@ -78,7 +66,13 @@ export const UserProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, setValue]);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user, loadProfile]);
 
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) return;
@@ -97,7 +91,7 @@ export const UserProfile = () => {
         throw error;
       }
 
-      setProfile(prev => ({ ...prev, display_name: data.display_name }));
+      // Profile updated successfully
       alert('资料保存成功！');
     } catch (error) {
       console.error('保存用户资料失败:', error);

@@ -126,7 +126,15 @@ async function syncRecentActivities(userId: string, accessToken: string) {
 
     // 批量插入活动数据
     if (activities.length > 0) {
-      const activitiesData = activities.map((activity: any) => ({
+      const activitiesData = activities.map((activity: { 
+        id: number; 
+        name: string; 
+        type: string; 
+        distance?: number; 
+        moving_time: number; 
+        total_elevation_gain?: number; 
+        start_date: string; 
+      }) => ({
         user_id: userId,
         strava_activity_id: activity.id,
         name: activity.name,

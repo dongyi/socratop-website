@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 
-export default function StravaCallbackPage() {
+function StravaCallbackContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -112,5 +111,21 @@ export default function StravaCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StravaCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-light mb-2">Loading...</h1>
+          <p className="text-gray-400">Please wait while we process your request</p>
+        </div>
+      </div>
+    }>
+      <StravaCallbackContent />
+    </Suspense>
   );
 }

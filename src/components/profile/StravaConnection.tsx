@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ExternalLink, Unlink, Activity, MapPin, Clock, Award } from 'lucide-react';
+import Image from 'next/image';
 
 interface StravaConnection {
   strava_user_id: number;
@@ -27,13 +28,7 @@ export const StravaConnection = () => {
   const [connection, setConnection] = useState<StravaConnection | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadConnection();
-    }
-  }, [user]);
-
-  const loadConnection = async () => {
+  const loadConnection = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -54,7 +49,13 @@ export const StravaConnection = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadConnection();
+    }
+  }, [user, loadConnection]);
 
   const handleConnect = () => {
     const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
@@ -162,9 +163,11 @@ export const StravaConnection = () => {
       ) : (
         <div className="space-y-6">
           <div className="flex items-start gap-4 p-4 bg-gray-800 rounded-lg">
-            <img
+            <Image
               src={connection.athlete_data.profile_medium || '/default-avatar.png'}
               alt="Strava头像"
+              width={64}
+              height={64}
               className="w-16 h-16 rounded-full"
             />
             <div className="flex-1">
