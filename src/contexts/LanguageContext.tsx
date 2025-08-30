@@ -79,7 +79,49 @@ const translations = {
     // Homepage additional translations
     workout_data_analysis: "Workout Data Analysis",
     workout_data_analysis_desc: "Professional FIT file analysis tool with multi-dimensional data visualization for heart rate, pace, power and more to help you deeply analyze your training performance.",
-    try_now: "Try Now →"
+    try_now: "Try Now →",
+    // New homepage content
+    platform_subtitle: "Professional Sports Data Platform - Connect, Analyze, and Improve Your Performance",
+    start_data_analysis: "Start Data Analysis",
+    learn_more_features: "Learn More Features",
+    contact_us: "Contact Us",
+    cadence_app: "Cadence App",
+    cadence_app_desc: "Smart metronome + GPS running tracking, a professional app tailored for runners",
+    app_store: "App Store",
+    learn_details: "Learn Details",
+    data_analysis_platform: "Data Analysis Platform",
+    data_platform_desc: "Connect Strava, analyze sports data, manage equipment, create personal sports profile",
+    try_now_btn: "Try Now",
+    feature_intro: "Feature Introduction",
+    multi_platform_title: "Multi-Platform Sports Ecosystem",
+    cadence_running_app: "Cadence Running App",
+    cadence_running_desc: "Perfect combination of smart metronome and GPS tracking, providing professional training tools for runners",
+    download_cadence: "Download Cadence",
+    smart_metronome_new: "Smart Metronome",
+    smart_metronome_desc_new: "Adjustable 160-200 BPM to help maintain stable running rhythm",
+    gps_tracking_new: "GPS Tracking",
+    gps_tracking_desc_new: "Precisely record running routes, distance, pace and movement tracks",
+    music_integration_new: "Music Integration",
+    music_integration_desc_new: "Seamlessly connect Apple Music and podcasts, enjoy music while running",
+    background_support: "Background Support",
+    background_support_desc: "Supports background audio playback, works normally even when screen is locked",
+    data_platform_title: "Data Analysis Platform",
+    data_platform_subtitle: "Connect multiple data sources to create a personal sports data center and scientifically analyze sports performance",
+    try_experience: "Try Experience",
+    personal_center: "Personal Center",
+    strava_integration: "Strava Integration",
+    strava_integration_desc: "Connect your Strava account to automatically sync your sports activity data",
+    data_visualization: "Data Visualization",
+    data_visualization_desc: "Rich chart displays with multi-dimensional analysis of your sports performance",
+    equipment_management: "Equipment Management",
+    equipment_management_desc: "Record and track sports equipment usage, plan replacements reasonably",
+    personal_profile: "Personal Profile",
+    personal_profile_desc: "Complete sports history records, build your exclusive sports data profile",
+    // Navigation
+    nav_home: "Home",
+    nav_data_analysis: "Data Analysis",
+    nav_personal_center: "Personal Center",
+    nav_sign_out: "Sign Out"
   },
   zh: {
     title: "Cadence - 完美的跑步伴侣 | 智能节拍器和GPS追踪器",
@@ -148,7 +190,49 @@ const translations = {
     // Homepage additional translations
     workout_data_analysis: "运动数据分析",
     workout_data_analysis_desc: "专业的FIT文件分析工具，支持心率、配速、功率等多维度数据可视化，帮你深度分析训练表现。",
-    try_now: "立即体验 →"
+    try_now: "立即体验 →",
+    // New homepage content
+    platform_subtitle: "专业的运动数据平台 - 连接、分析、提升您的运动表现",
+    start_data_analysis: "🏃 开始数据分析",
+    learn_more_features: "了解更多功能",
+    contact_us: "联系我们",
+    cadence_app: "Cadence App",
+    cadence_app_desc: "智能节拍器 + GPS跑步追踪，为跑者量身打造的专业应用",
+    app_store: "App Store",
+    learn_details: "了解详情",
+    data_analysis_platform: "数据分析平台",
+    data_platform_desc: "连接Strava，分析运动数据，管理装备，打造个人运动档案",
+    try_now_btn: "立即体验",
+    feature_intro: "功能介绍",
+    multi_platform_title: "多元化运动平台",
+    cadence_running_app: "Cadence 跑步应用",
+    cadence_running_desc: "智能节拍器与GPS追踪完美结合，为跑者提供专业的训练工具",
+    download_cadence: "下载 Cadence",
+    smart_metronome_new: "智能节拍器",
+    smart_metronome_desc_new: "160-200 BPM可调节拍，帮助保持稳定的跑步节奏",
+    gps_tracking_new: "GPS追踪",
+    gps_tracking_desc_new: "精准记录跑步路径、距离、配速和运动轨迹",
+    music_integration_new: "音乐集成",
+    music_integration_desc_new: "无缝连接Apple Music和播客，享受音乐伴跑",
+    background_support: "后台运行",
+    background_support_desc: "支持后台音频播放，锁屏状态下也能正常使用",
+    data_platform_title: "数据分析平台",
+    data_platform_subtitle: "连接多个数据源，打造个人运动数据中心，科学分析运动表现",
+    try_experience: "立即体验",
+    personal_center: "个人中心",
+    strava_integration: "Strava集成",
+    strava_integration_desc: "连接Strava账号，自动同步您的运动活动数据",
+    data_visualization: "数据可视化",
+    data_visualization_desc: "丰富的图表展示，多维度分析您的运动表现",
+    equipment_management: "装备管理",
+    equipment_management_desc: "记录和追踪运动装备使用情况，合理规划更换",
+    personal_profile: "个人档案",
+    personal_profile_desc: "完整的运动历史记录，构建专属的运动数据档案",
+    // Navigation
+    nav_home: "首页",
+    nav_data_analysis: "数据分析",
+    nav_personal_center: "个人中心",
+    nav_sign_out: "退出"
   },
 };
 
@@ -160,10 +244,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'zh')) {
       setLanguage(savedLanguage);
     } else {
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith('zh')) {
-        setLanguage('zh');
-      }
+      // Default to English - no browser language detection
+      setLanguage('en');
     }
   }, []);
 
