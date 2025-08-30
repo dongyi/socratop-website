@@ -96,7 +96,7 @@ export default function AppleSignInButton({ className = "" }: AppleSignInButtonP
   return (
     <button
       onClick={handleAppleSignIn}
-      className={`flex items-center gap-1 sm:gap-2 bg-black text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-600 hover:border-gray-400 transition-colors whitespace-nowrap ${className}`}
+      className={`flex items-center gap-1 sm:gap-2 bg-black text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-gray-600 hover:border-gray-400 transition-colors whitespace-nowrap ${className}`}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
         <path d="M17.05 20.28c-.98.95-2.05.88-3.08.47-1.09-.42-2.09-.42-3.23 0-1.44.56-2.2.47-3.08-.47C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
