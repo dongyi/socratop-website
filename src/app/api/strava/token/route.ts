@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const STRAVA_CLIENT_ID = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
+
+// 创建Supabase客户端的辅助函数
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase configuration missing');
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +30,18 @@ export async function POST(request: NextRequest) {
     if (!STRAVA_CLIENT_ID || !STRAVA_CLIENT_SECRET) {
       return NextResponse.json(
         { success: false, error: 'Strava配置错误' },
+        { status: 500 }
+      );
+    }
+
+    // 检查Supabase配置
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      console.error('Supabase configuration error:', error);
+      return NextResponse.json(
+        { success: false, error: 'Database configuration error' },
         { status: 500 }
       );
     }
@@ -146,6 +170,7 @@ async function syncRecentActivities(userId: string, accessToken: string) {
         data: activity,
       }));
 
+      const supabase = getSupabaseClient();
       const { error } = await supabase
         .from('activities')
         .upsert(activitiesData, {
