@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 
 interface AppleIDConfig {
   clientId: string;
@@ -73,7 +73,7 @@ export default function AppleSignInButton({ className = "" }: AppleSignInButtonP
         console.log('Apple ID Token:', data.authorization.id_token);
         
         // 使用 Supabase signInWithIdToken
-        const { data: authData, error } = await supabase.auth.signInWithIdToken({
+        const { data: authData, error } = await getSupabase().auth.signInWithIdToken({
           provider: 'apple',
           token: data.authorization.id_token,
         });

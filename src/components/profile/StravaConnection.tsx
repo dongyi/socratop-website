@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { ExternalLink, Unlink, Activity, MapPin, Clock, Award } from 'lucide-react';
 import Image from 'next/image';
 
@@ -32,7 +32,7 @@ export const StravaConnection = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('strava_connections')
         .select('strava_user_id, athlete_data, created_at')
         .eq('user_id', user.id)
@@ -81,7 +81,7 @@ export const StravaConnection = () => {
 
     setDisconnecting(true);
     try {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('strava_connections')
         .delete()
         .eq('user_id', user.id);
@@ -91,7 +91,7 @@ export const StravaConnection = () => {
       }
 
       // 同时删除相关的活动数据
-      await supabase
+      await getSupabase()
         .from('activities')
         .delete()
         .eq('user_id', user.id)

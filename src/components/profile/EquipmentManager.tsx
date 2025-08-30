@@ -75,7 +75,7 @@ export const EquipmentManager = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('sports_equipment')
         .select('*')
         .eq('user_id', user.id)
@@ -106,7 +106,7 @@ export const EquipmentManager = () => {
     try {
       if (editingId) {
         // 更新现有装备
-        const { error } = await supabase
+        const { error } = await getSupabase()
           .from('sports_equipment')
           .update({
             name: data.name,
@@ -123,7 +123,7 @@ export const EquipmentManager = () => {
         if (error) throw error;
       } else {
         // 创建新装备
-        const { error } = await supabase
+        const { error } = await getSupabase()
           .from('sports_equipment')
           .insert({
             user_id: user.id,
@@ -173,7 +173,7 @@ export const EquipmentManager = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('sports_equipment')
         .delete()
         .eq('id', id)
@@ -192,7 +192,7 @@ export const EquipmentManager = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('sports_equipment')
         .update({ 
           is_active: !isActive,

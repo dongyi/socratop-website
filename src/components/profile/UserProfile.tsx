@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,7 +33,7 @@ export const UserProfile = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('users_profiles')
         .select('display_name, avatar_url')
         .eq('id', user.id)
@@ -48,7 +48,7 @@ export const UserProfile = () => {
         setValue('display_name', data.display_name || '');
       } else {
         // 如果没有资料记录，创建一个
-        const { error: insertError } = await supabase
+        const { error: insertError } = await getSupabase()
           .from('users_profiles')
           .insert({
             id: user.id,
@@ -79,7 +79,7 @@ export const UserProfile = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('users_profiles')
         .upsert({
           id: user.id,

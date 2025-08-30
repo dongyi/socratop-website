@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-let supabaseInstance: ReturnType<typeof createClient> | null = null;
+let supabaseInstance: SupabaseClient | null = null;
 
-export function getSupabase() {
+export function getSupabase(): SupabaseClient {
   if (supabaseInstance) {
     return supabaseInstance;
   }
@@ -17,10 +17,3 @@ export function getSupabase() {
   supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
   return supabaseInstance;
 }
-
-// For backwards compatibility, create a proxy that forwards all calls
-export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
-  get(target, prop) {
-    return getSupabase()[prop as keyof ReturnType<typeof createClient>];
-  }
-});
