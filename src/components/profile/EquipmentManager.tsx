@@ -20,9 +20,7 @@ import {
 
 const equipmentSchema = z.object({
   name: z.string().min(1, '请输入装备名称').max(100, '名称不能超过100个字符'),
-  category: z.string().min(1, '请选择装备类别').max(50, '类别不能超过50个字符'),
-  brand: z.string().max(50, '品牌不能超过50个字符').optional().or(z.literal('')),
-  model: z.string().max(100, '型号不能超过100个字符').optional().or(z.literal('')),
+  sku_id: z.string().min(1, '请选择装备型号'),
   purchase_date: z.string().optional().or(z.literal('')),
   notes: z.string().max(500, '备注不能超过500个字符').optional().or(z.literal('')),
 });
@@ -32,15 +30,42 @@ type EquipmentFormData = z.infer<typeof equipmentSchema>;
 interface Equipment {
   id: string;
   name: string;
-  category: string;
+  category?: string;
   brand?: string;
   model?: string;
+  sku_id?: string;
+  brand_id?: string;
+  category_id?: string;
   purchase_date?: string;
   total_distance: number;
   total_hours: number;
   notes?: string;
   is_active: boolean;
   created_at: string;
+}
+
+interface Brand {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface SKU {
+  id: string;
+  name: string;
+  model_number: string;
+  description?: string;
+  msrp_price?: number;
+  brand_id: string;
+  category_id: string;
+  brands?: Brand | Brand[];
+  categories?: Category | Category[];
 }
 
 const categoryLabels = {
@@ -58,8 +83,12 @@ export const EquipmentManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [existingBrands, setExistingBrands] = useState<string[]>([]);
-  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [skus, setSKUs] = useState<SKU[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [filteredSKUs, setFilteredSKUs] = useState<SKU[]>([]);
 
   const {
     register,
@@ -96,21 +125,53 @@ export const EquipmentManager = () => {
 
   const loadBrandsAndCategories = useCallback(async () => {
     try {
-      // 从所有装备记录中提取品牌和类别
-      const { data, error } = await getSupabase()
-        .from('sports_equipment')
-        .select('brand, category');
+      // 加载品牌
+      const { data: brandsData, error: brandsError } = await getSupabase()
+        .from('brands')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
 
-      if (error) {
-        throw error;
+      if (brandsError) {
+        console.error('品牌查询错误:', brandsError);
+      } else {
+        setBrands(brandsData || []);
       }
 
-      // 提取唯一的品牌和类别
-      const brands = [...new Set(data?.map(item => item.brand).filter(Boolean) as string[])];
-      const categories = [...new Set(data?.map(item => item.category).filter(Boolean) as string[])];
-      
-      setExistingBrands(brands.sort());
-      setExistingCategories(categories.sort());
+      // 加载类别
+      const { data: categoriesData, error: categoriesError } = await getSupabase()
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (categoriesError) {
+        console.error('类别查询错误:', categoriesError);
+      } else {
+        setCategories(categoriesData || []);
+      }
+
+      // 加载所有SKU
+      const { data: skusData, error: skusError } = await getSupabase()
+        .from('skus')
+        .select(`
+          id,
+          name,
+          model_number,
+          description,
+          msrp_price,
+          brand_id,
+          category_id,
+          brands:brand_id(id, name),
+          categories:category_id(id, name)
+        `)
+        .eq('is_discontinued', false);
+
+      if (skusError) {
+        console.error('SKU查询错误:', skusError);
+      } else {
+        setSKUs(skusData || []);
+      }
     } catch (error) {
       console.error('加载品牌和类别失败:', error);
     }
@@ -123,22 +184,51 @@ export const EquipmentManager = () => {
     }
   }, [user, loadEquipment, loadBrandsAndCategories]);
 
+  // 根据品牌和类别过滤SKU
+  useEffect(() => {
+    let filtered = skus;
+    
+    if (selectedBrandId) {
+      filtered = filtered.filter(sku => sku.brand_id === selectedBrandId);
+    }
+    
+    if (selectedCategoryId) {
+      filtered = filtered.filter(sku => sku.category_id === selectedCategoryId);
+    }
+    
+    setFilteredSKUs(filtered);
+  }, [skus, selectedBrandId, selectedCategoryId]);
+
   const onSubmit = async (data: EquipmentFormData) => {
     if (!user) return;
 
     setSaving(true);
     try {
+      // 查找选中的SKU信息
+      const selectedSKU = skus.find(sku => sku.id === data.sku_id);
+      if (!selectedSKU) {
+        alert('请选择有效的装备型号');
+        return;
+      }
+
+      const equipmentData = {
+        name: data.name,
+        sku_id: data.sku_id,
+        brand_id: selectedSKU.brand_id,
+        category_id: selectedSKU.category_id,
+        brand: Array.isArray(selectedSKU.brands) ? selectedSKU.brands[0]?.name : selectedSKU.brands?.name || null,
+        category: Array.isArray(selectedSKU.categories) ? selectedSKU.categories[0]?.name : selectedSKU.categories?.name || null,
+        model: selectedSKU.name,
+        purchase_date: data.purchase_date || null,
+        notes: data.notes || null,
+      };
+
       if (editingId) {
         // 更新现有装备
         const { error } = await getSupabase()
           .from('sports_equipment')
           .update({
-            name: data.name,
-            category: data.category,
-            brand: data.brand || null,
-            model: data.model || null,
-            purchase_date: data.purchase_date || null,
-            notes: data.notes || null,
+            ...equipmentData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingId)
@@ -151,12 +241,7 @@ export const EquipmentManager = () => {
           .from('sports_equipment')
           .insert({
             user_id: user.id,
-            name: data.name,
-            category: data.category,
-            brand: data.brand || null,
-            model: data.model || null,
-            purchase_date: data.purchase_date || null,
-            notes: data.notes || null,
+            ...equipmentData,
           });
 
         if (error) throw error;
@@ -176,16 +261,24 @@ export const EquipmentManager = () => {
     setEditingId(item.id);
     setShowForm(true);
     setValue('name', item.name);
-    setValue('category', item.category);
-    setValue('brand', item.brand || '');
-    setValue('model', item.model || '');
+    setValue('sku_id', item.sku_id || '');
     setValue('purchase_date', item.purchase_date || '');
     setValue('notes', item.notes || '');
+    
+    // 设置品牌和类别选择以便过滤SKU
+    if (item.brand_id) {
+      setSelectedBrandId(item.brand_id);
+    }
+    if (item.category_id) {
+      setSelectedCategoryId(item.category_id);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setShowForm(false);
+    setSelectedBrandId('');
+    setSelectedCategoryId('');
     reset();
   };
 
@@ -282,7 +375,7 @@ export const EquipmentManager = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   装备名称 *
                 </label>
@@ -290,7 +383,7 @@ export const EquipmentManager = () => {
                   type="text"
                   {...register('name')}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="例如：Nike Air Zoom Pegasus 40"
+                  placeholder="例如：我的跑鞋"
                 />
                 {errors.name && (
                   <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
@@ -299,52 +392,70 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  装备类别 *
-                </label>
-                <select
-                  {...register('category')}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">选择类别</option>
-                  {/* 优先显示预定义的类别 */}
-                  {Object.entries(categoryLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                  {/* 显示数据库中的其他类别 */}
-                  {existingCategories.filter(cat => !Object.keys(categoryLabels).includes(cat)).map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                {errors.category && (
-                  <p className="text-red-400 text-sm mt-1">{errors.category.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
                   品牌
                 </label>
                 <select
-                  {...register('brand')}
+                  value={selectedBrandId}
+                  onChange={(e) => setSelectedBrandId(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">选择品牌</option>
-                  {existingBrands.map((brand) => (
-                    <option key={brand} value={brand}>{brand}</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>{brand.name}</option>
                   ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  型号
+                  类别
                 </label>
-                <input
-                  type="text"
-                  {...register('model')}
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="例如：Air Zoom Pegasus 40"
-                />
+                >
+                  <option value="">选择类别</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  装备型号 *
+                </label>
+                <select
+                  {...register('sku_id')}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={filteredSKUs.length === 0}
+                >
+                  <option value="">
+                    {filteredSKUs.length === 0 
+                      ? (selectedBrandId || selectedCategoryId ? '没有符合条件的型号' : '请先选择品牌或类别') 
+                      : '选择装备型号'
+                    }
+                  </option>
+                  {filteredSKUs.map((sku) => {
+                    const brandName = Array.isArray(sku.brands) ? sku.brands[0]?.name : sku.brands?.name;
+                    const categoryName = Array.isArray(sku.categories) ? sku.categories[0]?.name : sku.categories?.name;
+                    return (
+                      <option key={sku.id} value={sku.id}>
+                        {brandName} {sku.name} - {categoryName}
+                        {sku.msrp_price && ` (¥${sku.msrp_price})`}
+                      </option>
+                    );
+                  })}
+                </select>
+                {errors.sku_id && (
+                  <p className="text-red-400 text-sm mt-1">{errors.sku_id.message}</p>
+                )}
+                {filteredSKUs.length === 0 && (selectedBrandId || selectedCategoryId) && (
+                  <p className="text-yellow-400 text-sm mt-1">
+                    没有找到符合条件的装备型号，请尝试其他品牌或类别组合
+                  </p>
+                )}
               </div>
 
               <div>
