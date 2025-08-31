@@ -20,9 +20,7 @@ import {
 
 const equipmentSchema = z.object({
   name: z.string().min(1, '请输入装备名称').max(100, '名称不能超过100个字符'),
-  category: z.enum(['shoes', 'watch', 'bike', 'clothing', 'accessories']).refine((val) => val, {
-    message: '请选择装备类别',
-  }),
+  category: z.string().min(1, '请选择装备类别').max(50, '类别不能超过50个字符'),
   brand: z.string().max(50, '品牌不能超过50个字符').optional().or(z.literal('')),
   model: z.string().max(100, '型号不能超过100个字符').optional().or(z.literal('')),
   purchase_date: z.string().optional().or(z.literal('')),
@@ -60,6 +58,8 @@ export const EquipmentManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [existingBrands, setExistingBrands] = useState<string[]>([]);
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
 
   const {
     register,
@@ -75,6 +75,7 @@ export const EquipmentManager = () => {
     if (!user) return;
 
     try {
+      // 加载用户装备
       const { data, error } = await getSupabase()
         .from('sports_equipment')
         .select('*')
@@ -93,11 +94,34 @@ export const EquipmentManager = () => {
     }
   }, [user]);
 
+  const loadBrandsAndCategories = useCallback(async () => {
+    try {
+      // 从所有装备记录中提取品牌和类别
+      const { data, error } = await getSupabase()
+        .from('sports_equipment')
+        .select('brand, category');
+
+      if (error) {
+        throw error;
+      }
+
+      // 提取唯一的品牌和类别
+      const brands = [...new Set(data?.map(item => item.brand).filter(Boolean) as string[])];
+      const categories = [...new Set(data?.map(item => item.category).filter(Boolean) as string[])];
+      
+      setExistingBrands(brands.sort());
+      setExistingCategories(categories.sort());
+    } catch (error) {
+      console.error('加载品牌和类别失败:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       loadEquipment();
+      loadBrandsAndCategories();
     }
-  }, [user, loadEquipment]);
+  }, [user, loadEquipment, loadBrandsAndCategories]);
 
   const onSubmit = async (data: EquipmentFormData) => {
     if (!user) return;
@@ -152,7 +176,7 @@ export const EquipmentManager = () => {
     setEditingId(item.id);
     setShowForm(true);
     setValue('name', item.name);
-    setValue('category', item.category as 'shoes' | 'watch' | 'bike' | 'clothing' | 'accessories');
+    setValue('category', item.category);
     setValue('brand', item.brand || '');
     setValue('model', item.model || '');
     setValue('purchase_date', item.purchase_date || '');
@@ -282,8 +306,13 @@ export const EquipmentManager = () => {
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">选择类别</option>
+                  {/* 优先显示预定义的类别 */}
                   {Object.entries(categoryLabels).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
+                  ))}
+                  {/* 显示数据库中的其他类别 */}
+                  {existingCategories.filter(cat => !Object.keys(categoryLabels).includes(cat)).map((category) => (
+                    <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
                 {errors.category && (
@@ -295,12 +324,15 @@ export const EquipmentManager = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   品牌
                 </label>
-                <input
-                  type="text"
+                <select
                   {...register('brand')}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="例如：Nike"
-                />
+                >
+                  <option value="">选择品牌</option>
+                  {existingBrands.map((brand) => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
