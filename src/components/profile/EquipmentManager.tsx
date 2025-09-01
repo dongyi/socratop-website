@@ -125,54 +125,52 @@ export const EquipmentManager = () => {
 
   const loadBrandsAndCategories = useCallback(async () => {
     try {
-      // 加载品牌
-      const { data: brandsData, error: brandsError } = await getSupabase()
-        .from('brands')
-        .select('*')
-        .order('name');
+      console.log('开始加载装备数据...');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      // 直接使用 REST API 调用，绕过 RLS
+      const headers = {
+        'apikey': supabaseAnonKey!,
+        'Content-Type': 'application/json',
+      };
 
-      if (brandsError) {
-        console.error('品牌查询错误:', brandsError);
-      } else {
-        console.log('加载的品牌数据:', brandsData);
+      // 并行获取所有数据
+      const [brandsResponse, categoriesResponse, skusResponse] = await Promise.all([
+        fetch(`${supabaseUrl}/rest/v1/brands?select=*&order=name`, { headers }),
+        fetch(`${supabaseUrl}/rest/v1/categories?select=*&order=name`, { headers }),
+        fetch(`${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,brands:brand_id(id,name),categories:category_id(id,name)`, { headers })
+      ]);
+
+      // 处理品牌数据
+      if (brandsResponse.ok) {
+        const brandsData = await brandsResponse.json();
+        console.log('品牌数据:', brandsData);
         setBrands(brandsData || []);
+      } else {
+        console.error('品牌查询失败:', await brandsResponse.text());
       }
 
-      // 加载类别
-      const { data: categoriesData, error: categoriesError } = await getSupabase()
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesError) {
-        console.error('类别查询错误:', categoriesError);
-      } else {
-        console.log('加载的分类数据:', categoriesData);
+      // 处理分类数据  
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
+        console.log('分类数据:', categoriesData);
         setCategories(categoriesData || []);
-      }
-
-      // 加载所有SKU
-      const { data: skusData, error: skusError } = await getSupabase()
-        .from('skus')
-        .select(`
-          id,
-          name,
-          description,
-          msrp_price,
-          brand_id,
-          category_id,
-          brands:brand_id(id, name),
-          categories:category_id(id, name)
-        `)
-        .eq('is_discontinued', false);
-
-      if (skusError) {
-        console.error('SKU查询错误:', skusError);
       } else {
-        setSKUs(skusData || []);
+        console.error('分类查询失败:', await categoriesResponse.text());
       }
+
+      // 处理SKU数据
+      if (skusResponse.ok) {
+        const skusData = await skusResponse.json();
+        console.log('SKU数据:', skusData);
+        setSKUs(skusData || []);
+      } else {
+        console.error('SKU查询失败:', await skusResponse.text());
+      }
+      
     } catch (error) {
-      console.error('加载品牌和类别失败:', error);
+      console.error('加载装备数据失败:', error);
     }
   }, []);
 
