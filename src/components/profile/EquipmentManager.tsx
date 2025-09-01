@@ -86,8 +86,9 @@ export const EquipmentManager = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [skus, setSKUs] = useState<SKU[]>([]);
-  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedBrandId, setSelectedBrandId] = useState<string>(''); 
+  const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   const [filteredSKUs, setFilteredSKUs] = useState<SKU[]>([]);
 
   const {
@@ -184,20 +185,44 @@ export const EquipmentManager = () => {
     }
   }, [user, loadEquipment, loadBrandsAndCategories]);
 
-  // 根据品牌和类别过滤SKU
+  // 根据分类过滤品牌
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setFilteredBrands([]);
+      setSelectedBrandId('');
+      return;
+    }
+
+    // 找出该分类下有SKU的所有品牌
+    const categoryBrandIds = skus
+      .filter(sku => sku.category_id === selectedCategoryId)
+      .map(sku => sku.brand_id);
+    
+    const uniqueBrandIds = Array.from(new Set(categoryBrandIds));
+    const filteredBrandsData = brands.filter(brand => uniqueBrandIds.includes(brand.id));
+    
+    setFilteredBrands(filteredBrandsData);
+    
+    // 如果当前选择的品牌不在过滤后的列表中，清空品牌选择
+    if (selectedBrandId && !uniqueBrandIds.includes(selectedBrandId)) {
+      setSelectedBrandId('');
+    }
+  }, [selectedCategoryId, skus, brands, selectedBrandId]);
+
+  // 根据分类和品牌过滤SKU
   useEffect(() => {
     let filtered = skus;
-    
-    if (selectedBrandId) {
-      filtered = filtered.filter(sku => sku.brand_id === selectedBrandId);
-    }
     
     if (selectedCategoryId) {
       filtered = filtered.filter(sku => sku.category_id === selectedCategoryId);
     }
     
+    if (selectedBrandId) {
+      filtered = filtered.filter(sku => sku.brand_id === selectedBrandId);
+    }
+    
     setFilteredSKUs(filtered);
-  }, [skus, selectedBrandId, selectedCategoryId]);
+  }, [skus, selectedCategoryId, selectedBrandId]);
 
   const onSubmit = async (data: EquipmentFormData) => {
     if (!user) return;
@@ -265,20 +290,20 @@ export const EquipmentManager = () => {
     setValue('purchase_date', item.purchase_date || '');
     setValue('notes', item.notes || '');
     
-    // 设置品牌和类别选择以便过滤SKU
-    if (item.brand_id) {
-      setSelectedBrandId(item.brand_id);
-    }
+    // 设置分类和品牌选择以便过滤SKU
     if (item.category_id) {
       setSelectedCategoryId(item.category_id);
+    }
+    if (item.brand_id) {
+      setSelectedBrandId(item.brand_id);
     }
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setShowForm(false);
-    setSelectedBrandId('');
     setSelectedCategoryId('');
+    setSelectedBrandId('');
     reset();
   };
 
@@ -374,8 +399,8 @@ export const EquipmentManager = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   装备名称 *
                 </label>
@@ -392,15 +417,46 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  品牌
+                  分类 *
+                </label>
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => {
+                    setSelectedCategoryId(e.target.value);
+                    setSelectedBrandId(''); // 清空品牌选择
+                    setValue('sku_id', ''); // 清空SKU选择
+                  }}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">请先选择分类</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  品牌 *
                 </label>
                 <select
                   value={selectedBrandId}
-                  onChange={(e) => setSelectedBrandId(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => {
+                    setSelectedBrandId(e.target.value);
+                    setValue('sku_id', ''); // 清空SKU选择
+                  }}
+                  disabled={!selectedCategoryId}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                 >
-                  <option value="">选择品牌</option>
-                  {brands.map((brand) => (
+                  <option value="">
+                    {!selectedCategoryId 
+                      ? '请先选择分类' 
+                      : filteredBrands.length === 0 
+                        ? '该分类下暂无品牌' 
+                        : '选择品牌'
+                    }
+                  </option>
+                  {filteredBrands.map((brand) => (
                     <option key={brand.id} value={brand.id}>{brand.name}</option>
                   ))}
                 </select>
@@ -408,57 +464,37 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  类别
-                </label>
-                <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">选择类别</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
                   装备型号 *
                 </label>
                 <select
                   {...register('sku_id')}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={filteredSKUs.length === 0}
+                  disabled={!selectedCategoryId || !selectedBrandId}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                 >
                   <option value="">
-                    {filteredSKUs.length === 0 
-                      ? (selectedBrandId || selectedCategoryId ? '没有符合条件的型号' : '请先选择品牌或类别') 
-                      : '选择装备型号'
+                    {!selectedCategoryId 
+                      ? '请先选择分类' 
+                      : !selectedBrandId
+                        ? '请先选择品牌'
+                        : filteredSKUs.length === 0 
+                          ? '该品牌下暂无型号' 
+                          : '选择装备型号'
                     }
                   </option>
-                  {filteredSKUs.map((sku) => {
-                    const brandName = Array.isArray(sku.brands) ? sku.brands[0]?.name : sku.brands?.name;
-                    const categoryName = Array.isArray(sku.categories) ? sku.categories[0]?.name : sku.categories?.name;
-                    return (
-                      <option key={sku.id} value={sku.id}>
-                        {brandName} {sku.name} - {categoryName}
-                        {sku.msrp_price && ` (¥${sku.msrp_price})`}
-                      </option>
-                    );
-                  })}
+                  {filteredSKUs.map((sku) => (
+                    <option key={sku.id} value={sku.id}>
+                      {sku.name}
+                      {sku.model_number && ` (${sku.model_number})`}
+                      {sku.msrp_price && ` - ¥${sku.msrp_price}`}
+                    </option>
+                  ))}
                 </select>
                 {errors.sku_id && (
                   <p className="text-red-400 text-sm mt-1">{errors.sku_id.message}</p>
                 )}
-                {filteredSKUs.length === 0 && (selectedBrandId || selectedCategoryId) && (
-                  <p className="text-yellow-400 text-sm mt-1">
-                    没有找到符合条件的装备型号，请尝试其他品牌或类别组合
-                  </p>
-                )}
               </div>
 
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   购买日期
                 </label>
