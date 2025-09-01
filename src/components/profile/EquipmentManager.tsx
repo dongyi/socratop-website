@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 
 const equipmentSchema = z.object({
-  name: z.string().min(1, '请输入装备名称').max(100, '名称不能超过100个字符'),
   sku_id: z.string().min(1, '请选择装备型号'),
   purchase_date: z.string().optional().or(z.literal('')),
   notes: z.string().max(500, '备注不能超过500个字符').optional().or(z.literal('')),
@@ -29,10 +28,6 @@ type EquipmentFormData = z.infer<typeof equipmentSchema>;
 
 interface Equipment {
   id: string;
-  name: string;
-  category?: string;
-  brand?: string;
-  model?: string;
   sku_id?: string;
   brand_id?: string;
   category_id?: string;
@@ -42,6 +37,10 @@ interface Equipment {
   notes?: string;
   is_active: boolean;
   created_at: string;
+  // 关联数据
+  brands?: Brand;
+  categories?: Category;
+  skus?: SKU;
 }
 
 interface Brand {
@@ -104,10 +103,15 @@ export const EquipmentManager = () => {
     if (!user) return;
 
     try {
-      // 加载用户装备
+      // 加载用户装备（包含关联数据）
       const { data, error } = await getSupabase()
         .from('sports_equipment')
-        .select('*')
+        .select(`
+          *,
+          brands:brand_id(id, name),
+          categories:category_id(id, name),
+          skus:sku_id(id, name, description)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -233,13 +237,9 @@ export const EquipmentManager = () => {
       }
 
       const equipmentData = {
-        name: data.name,
         sku_id: data.sku_id,
         brand_id: selectedSKU.brand_id,
         category_id: selectedSKU.category_id,
-        brand: Array.isArray(selectedSKU.brands) ? selectedSKU.brands[0]?.name : selectedSKU.brands?.name || null,
-        category: Array.isArray(selectedSKU.categories) ? selectedSKU.categories[0]?.name : selectedSKU.categories?.name || null,
-        model: selectedSKU.name,
         purchase_date: data.purchase_date || null,
         notes: data.notes || null,
       };
@@ -281,7 +281,6 @@ export const EquipmentManager = () => {
   const handleEdit = (item: Equipment) => {
     setEditingId(item.id);
     setShowForm(true);
-    setValue('name', item.name);
     setValue('sku_id', item.sku_id || '');
     setValue('purchase_date', item.purchase_date || '');
     setValue('notes', item.notes || '');
@@ -303,10 +302,10 @@ export const EquipmentManager = () => {
     reset();
   };
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleDelete = async (id: string, displayName: string) => {
     if (!user) return;
 
-    if (!confirm(`确定要删除装备"${name}"吗？此操作无法撤销。`)) {
+    if (!confirm(`确定要删除装备"${displayName}"吗？此操作无法撤销。`)) {
       return;
     }
 
@@ -396,20 +395,6 @@ export const EquipmentManager = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  装备名称 *
-                </label>
-                <input
-                  type="text"
-                  {...register('name')}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="例如：我的跑鞋"
-                />
-                {errors.name && (
-                  <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
-                )}
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -568,13 +553,15 @@ export const EquipmentManager = () => {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">
-                    {categoryLabels[item.category as keyof typeof categoryLabels]?.split(' ')[0]}
+                    {item.categories?.name && categoryLabels[item.categories.name as keyof typeof categoryLabels]?.split(' ')[0] || '📦'}
                   </span>
                   <div>
-                    <h3 className="font-semibold text-sm">{item.name}</h3>
-                    {(item.brand || item.model) && (
+                    <h3 className="font-semibold text-sm">
+                      {[item.brands?.name, item.skus?.name].filter(Boolean).join(' ') || '未知装备'}
+                    </h3>
+                    {item.categories && (
                       <p className="text-xs text-gray-400">
-                        {[item.brand, item.model].filter(Boolean).join(' ')}
+                        {item.categories.name}
                       </p>
                     )}
                   </div>
@@ -587,7 +574,7 @@ export const EquipmentManager = () => {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id, item.name)}
+                    onClick={() => handleDelete(item.id, [item.brands?.name, item.skus?.name].filter(Boolean).join(' ') || '未知装备')}
                     className="p-1 text-gray-400 hover:text-red-400"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -647,7 +634,7 @@ export const EquipmentManager = () => {
                   {item.is_active ? '使用中' : '已停用'}
                 </button>
                 <span className="text-xs text-gray-500">
-                  {categoryLabels[item.category as keyof typeof categoryLabels]?.split(' ').slice(1).join(' ')}
+                  {item.categories?.name && categoryLabels[item.categories.name as keyof typeof categoryLabels]?.split(' ').slice(1).join(' ') || item.categories?.name || '未知分类'}
                 </span>
               </div>
             </div>
