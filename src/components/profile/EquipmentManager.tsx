@@ -129,12 +129,12 @@ export const EquipmentManager = () => {
       const { data: brandsData, error: brandsError } = await getSupabase()
         .from('brands')
         .select('*')
-        .eq('is_active', true)
         .order('name');
 
       if (brandsError) {
         console.error('品牌查询错误:', brandsError);
       } else {
+        console.log('加载的品牌数据:', brandsData);
         setBrands(brandsData || []);
       }
 
@@ -142,12 +142,12 @@ export const EquipmentManager = () => {
       const { data: categoriesData, error: categoriesError } = await getSupabase()
         .from('categories')
         .select('*')
-        .eq('is_active', true)
         .order('name');
 
       if (categoriesError) {
         console.error('类别查询错误:', categoriesError);
       } else {
+        console.log('加载的分类数据:', categoriesData);
         setCategories(categoriesData || []);
       }
 
