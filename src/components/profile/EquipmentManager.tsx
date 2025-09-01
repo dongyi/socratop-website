@@ -108,9 +108,9 @@ export const EquipmentManager = () => {
         .from('sports_equipment')
         .select(`
           *,
-          brands:brand_id(id, name),
-          categories:category_id(id, name),
-          skus:sku_id(id, name, description)
+          brands!brand_id(id, name),
+          categories!category_id(id, name),
+          skus!sku_id(id, name, description)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -119,6 +119,7 @@ export const EquipmentManager = () => {
         throw error;
       }
 
+      console.log('加载的装备数据:', data);
       setEquipment(data || []);
     } catch (error) {
       console.error('加载装备列表失败:', error);
@@ -279,6 +280,7 @@ export const EquipmentManager = () => {
   };
 
   const handleEdit = (item: Equipment) => {
+    console.log('编辑装备:', item);
     setEditingId(item.id);
     setShowForm(true);
     setValue('sku_id', item.sku_id || '');
@@ -287,9 +289,11 @@ export const EquipmentManager = () => {
     
     // 设置分类和品牌选择以便过滤SKU
     if (item.category_id) {
+      console.log('设置分类ID:', item.category_id);
       setSelectedCategoryId(item.category_id);
     }
     if (item.brand_id) {
+      console.log('设置品牌ID:', item.brand_id);
       setSelectedBrandId(item.brand_id);
     }
   };
@@ -557,7 +561,13 @@ export const EquipmentManager = () => {
                   </span>
                   <div>
                     <h3 className="font-semibold text-sm">
-                      {[item.brands?.name, item.skus?.name].filter(Boolean).join(' ') || '未知装备'}
+                      {(() => {
+                        const brandName = item.brands?.name;
+                        const skuName = item.skus?.name;
+                        const displayName = [brandName, skuName].filter(Boolean).join(' ');
+                        console.log('装备显示信息:', { item, brandName, skuName, displayName });
+                        return displayName || '未知装备';
+                      })()}
                     </h3>
                     {item.categories && (
                       <p className="text-xs text-gray-400">
