@@ -59,7 +59,6 @@ interface Category {
 interface SKU {
   id: string;
   name: string;
-  model_number: string;
   description?: string;
   msrp_price?: number;
   brand_id: string;
@@ -158,7 +157,6 @@ export const EquipmentManager = () => {
         .select(`
           id,
           name,
-          model_number,
           description,
           msrp_price,
           brand_id,
@@ -484,7 +482,6 @@ export const EquipmentManager = () => {
                   {filteredSKUs.map((sku) => (
                     <option key={sku.id} value={sku.id}>
                       {sku.name}
-                      {sku.model_number && ` (${sku.model_number})`}
                       {sku.msrp_price && ` - ¥${sku.msrp_price}`}
                     </option>
                   ))}
