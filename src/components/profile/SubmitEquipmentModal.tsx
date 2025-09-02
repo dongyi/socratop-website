@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,11 +15,21 @@ import {
   CheckCircle
 } from 'lucide-react';
 
+interface Brand {
+  id: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
 const submitEquipmentSchema = z.object({
   name: z.string().min(1, 'Equipment name is required').max(100, 'Equipment name cannot exceed 100 characters'),
   description: z.string().max(500, 'Description cannot exceed 500 characters').optional().or(z.literal('')),
-  brand_name: z.string().min(1, 'Brand name is required').max(50, 'Brand name cannot exceed 50 characters'),
-  category_name: z.string().min(1, 'Please select a category'),
+  brand_id: z.string().min(1, 'Please select a brand'),
+  category_id: z.string().min(1, 'Please select a category'),
   msrp_price: z.string().optional().or(z.literal('')),
   model_year: z.string().optional().or(z.literal('')),
   weight: z.string().optional().or(z.literal('')),
@@ -35,14 +46,6 @@ interface SubmitEquipmentModalProps {
   requireLogin?: boolean;
 }
 
-const categories = [
-  { id: 'shoes', name: 'Running Shoes' },
-  { id: 'watch', name: 'Sports Watch' },
-  { id: 'bike', name: 'Bicycle' },
-  { id: 'clothing', name: 'Sports Clothing' },
-  { id: 'accessories', name: 'Accessories' },
-];
-
 const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
   isOpen,
   onClose,
@@ -52,6 +55,9 @@ const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
 
   const {
     register,
@@ -61,6 +67,43 @@ const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
   } = useForm<SubmitEquipmentFormData>({
     resolver: zodResolver(submitEquipmentSchema),
   });
+
+  // Load brands and categories from database
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isOpen) return;
+      
+      setLoadingData(true);
+      try {
+        const supabase = getSupabase();
+        
+        // Load brands
+        const { data: brandsData, error: brandsError } = await supabase
+          .from('brands')
+          .select('id, name')
+          .order('name');
+        
+        if (brandsError) throw brandsError;
+        setBrands(brandsData || []);
+        
+        // Load categories  
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('id, name')
+          .order('name');
+          
+        if (categoriesError) throw categoriesError;
+        setCategories(categoriesData || []);
+        
+      } catch (error) {
+        console.error('Failed to load brands and categories:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    
+    loadData();
+  }, [isOpen]);
 
   const handleClose = () => {
     if (submitSuccess) {
@@ -100,8 +143,8 @@ const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
         user_id: user.id,
         name: data.name,
         description: data.description || null,
-        brand_name: data.brand_name,
-        category_name: data.category_name,
+        brand_id: data.brand_id,
+        category_id: data.category_id,
         msrp_price: data.msrp_price ? parseFloat(data.msrp_price) : null,
         model_year: data.model_year ? parseInt(data.model_year) : null,
         weight: data.weight ? parseFloat(data.weight) : null,
@@ -212,16 +255,24 @@ const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Brand Name *
+                    Brand *
                   </label>
-                  <input
-                    type="text"
-                    {...register('brand_name')}
+                  <select
+                    {...register('brand_id')}
+                    disabled={loadingData}
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                    placeholder="e.g., Nike"
-                  />
-                  {errors.brand_name && (
-                    <p className="text-red-400 text-sm mt-1">{errors.brand_name.message}</p>
+                  >
+                    <option value="">
+                      {loadingData ? 'Loading brands...' : 'Select Brand'}
+                    </option>
+                    {brands.map((brand) => (
+                      <option key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.brand_id && (
+                    <p className="text-red-400 text-sm mt-1">{errors.brand_id.message}</p>
                   )}
                 </div>
 
@@ -230,18 +281,21 @@ const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
                     Category *
                   </label>
                   <select
-                    {...register('category_name')}
+                    {...register('category_id')}
+                    disabled={loadingData}
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
                   >
-                    <option value="">Select Category</option>
+                    <option value="">
+                      {loadingData ? 'Loading categories...' : 'Select Category'}
+                    </option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
                   </select>
-                  {errors.category_name && (
-                    <p className="text-red-400 text-sm mt-1">{errors.category_name.message}</p>
+                  {errors.category_id && (
+                    <p className="text-red-400 text-sm mt-1">{errors.category_id.message}</p>
                   )}
                 </div>
 

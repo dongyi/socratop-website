@@ -483,7 +483,7 @@ export const EquipmentManager = () => {
                     .map((sku) => (
                     <option key={sku.id} value={sku.id}>
                       {sku.name}
-                      {sku.msrp_price && ` - ¥${sku.msrp_price}`}
+                      {sku.msrp_price && ` - $${sku.msrp_price}`}
                     </option>
                   ))}
                 </select>
