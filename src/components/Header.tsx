@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import useUserProfile from '@/hooks/useUserProfile';
 import AppleSignInButton from './AppleSignInButton';
 import LanguageToggle from './LanguageToggle';
 import { User, BarChart3, Home } from 'lucide-react';
