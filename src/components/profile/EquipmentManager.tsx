@@ -466,7 +466,9 @@ export const EquipmentManager = () => {
                           : '选择装备型号'
                     }
                   </option>
-                  {filteredSKUs.map((sku) => (
+                  {filteredSKUs
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((sku) => (
                     <option key={sku.id} value={sku.id}>
                       {sku.name}
                       {sku.msrp_price && ` - ¥${sku.msrp_price}`}
