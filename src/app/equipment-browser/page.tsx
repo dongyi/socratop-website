@@ -1,0 +1,484 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+// import { useLanguage } from '@/contexts/LanguageContext';
+import { getSupabase } from '@/lib/supabase';
+import { 
+  Search, 
+  Filter,
+  Star,
+  StarHalf,
+  Plus,
+  Grid,
+  List,
+  ChevronDown,
+  MessageSquare,
+  // Users,
+  Package,
+  Loader,
+  Eye
+} from 'lucide-react';
+import Link from 'next/link';
+
+interface Brand {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Equipment {
+  id: string;
+  name: string;
+  description?: string;
+  msrp_price?: number;
+  brand_id: string;
+  category_id: string;
+  brands?: Brand;
+  categories?: Category;
+  // 评分信息
+  average_rating?: number;
+  review_count?: number;
+  rating_distribution?: Record<string, number>;
+}
+
+type SortOption = 'name' | 'price-low' | 'price-high' | 'rating-high' | 'rating-low' | 'reviews-most';
+type ViewMode = 'grid' | 'list';
+
+const EquipmentBrowser = () => {
+  const { user } = useAuth();
+  // const { t } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  
+  // 筛选和搜索状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('rating-high');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // 加载基础数据
+  const loadBrandsAndCategories = useCallback(async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      const headers = {
+        'apikey': supabaseAnonKey!,
+        'Content-Type': 'application/json',
+      };
+
+      const [brandsResponse, categoriesResponse] = await Promise.all([
+        fetch(`${supabaseUrl}/rest/v1/brands?select=*&order=name`, { headers }),
+        fetch(`${supabaseUrl}/rest/v1/categories?select=*&order=name`, { headers })
+      ]);
+
+      if (brandsResponse.ok) {
+        const brandsData = await brandsResponse.json();
+        setBrands(brandsData || []);
+      }
+
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
+        setCategories(categoriesData || []);
+      }
+    } catch (error) {
+      console.error('加载基础数据失败:', error);
+    }
+  }, []);
+
+  // 加载装备数据
+  const loadEquipment = useCallback(async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      const headers = {
+        'apikey': supabaseAnonKey!,
+        'Content-Type': 'application/json',
+      };
+
+      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,brands:brand_id(id,name),categories:category_id(id,name)`;
+      
+      // 添加筛选条件
+      const filters: string[] = [];
+      if (selectedBrandId) {
+        filters.push(`brand_id=eq.${selectedBrandId}`);
+      }
+      if (selectedCategoryId) {
+        filters.push(`category_id=eq.${selectedCategoryId}`);
+      }
+      
+      if (filters.length > 0) {
+        query += `&${filters.join('&')}`;
+      }
+
+      const response = await fetch(query, { headers });
+      
+      if (response.ok) {
+        const equipmentData = await response.json();
+        
+        // 加载评分数据
+        const equipmentWithRatings = await Promise.all(
+          equipmentData.map(async (item: Equipment) => {
+            try {
+              const ratingResponse = await fetch(
+                `${supabaseUrl}/rest/v1/equipment_ratings?select=*&sku_id=eq.${item.id}`,
+                { headers }
+              );
+              
+              if (ratingResponse.ok) {
+                const ratingData = await ratingResponse.json();
+                if (ratingData && ratingData.length > 0) {
+                  return {
+                    ...item,
+                    average_rating: ratingData[0].average_rating,
+                    review_count: ratingData[0].review_count,
+                    rating_distribution: ratingData[0].rating_distribution
+                  };
+                }
+              }
+            } catch (error) {
+              console.error('加载评分数据失败:', error);
+            }
+            
+            return {
+              ...item,
+              average_rating: 0,
+              review_count: 0,
+              rating_distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+            };
+          })
+        );
+        
+        setEquipment(equipmentWithRatings);
+      }
+    } catch (error) {
+      console.error('加载装备数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBrandId, selectedCategoryId]);
+
+  useEffect(() => {
+    loadBrandsAndCategories();
+  }, [loadBrandsAndCategories]);
+
+  useEffect(() => {
+    loadEquipment();
+  }, [loadEquipment]);
+
+  // 搜索和排序过滤
+  const filteredEquipment = equipment
+    .filter(item => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          item.name.toLowerCase().includes(query) ||
+          item.brands?.name.toLowerCase().includes(query) ||
+          item.description?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'price-low':
+          return (a.msrp_price || 0) - (b.msrp_price || 0);
+        case 'price-high':
+          return (b.msrp_price || 0) - (a.msrp_price || 0);
+        case 'rating-high':
+          return (b.average_rating || 0) - (a.average_rating || 0);
+        case 'rating-low':
+          return (a.average_rating || 0) - (b.average_rating || 0);
+        case 'reviews-most':
+          return (b.review_count || 0) - (a.review_count || 0);
+        default:
+          return 0;
+      }
+    });
+
+  // 添加到个人装备库
+  const addToMyEquipment = async (sku: Equipment) => {
+    if (!user) {
+      alert('请先登录');
+      return;
+    }
+
+    try {
+      const { error } = await getSupabase()
+        .from('sports_equipment')
+        .insert({
+          user_id: user.id,
+          sku_id: sku.id,
+          brand_id: sku.brand_id,
+          category_id: sku.category_id,
+        });
+
+      if (error) throw error;
+      
+      alert('已添加到我的装备库');
+    } catch (error) {
+      console.error('添加装备失败:', error);
+      alert('添加失败，请重试');
+    }
+  };
+
+  // 渲染评分星星
+  const renderStars = (rating: number, size = 16) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <Star key={i} className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+      );
+    }
+    
+    if (hasHalfStar) {
+      stars.push(
+        <StarHalf key="half" className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+      );
+    }
+    
+    const emptyStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <Star key={`empty-${i}`} className={`w-${size/4} h-${size/4} text-gray-400`} />
+      );
+    }
+    
+    return stars;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader className="w-8 h-8 animate-spin" />
+          <span>Loading equipment...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* 页面标题 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">装备库</h1>
+          <p className="text-gray-400">浏览全部装备，查看评价和评分</p>
+        </div>
+
+        {/* 搜索和筛选栏 */}
+        <div className="bg-gray-900 rounded-lg p-6 mb-6">
+          {/* 搜索框 */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="搜索装备名称或品牌..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* 筛选和排序控制 */}
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-md hover:bg-gray-700"
+            >
+              <Filter className="w-4 h-4" />
+              筛选
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="rating-high">评分从高到低</option>
+              <option value="rating-low">评分从低到高</option>
+              <option value="reviews-most">评论数最多</option>
+              <option value="name">按名称排序</option>
+              <option value="price-low">价格从低到高</option>
+              <option value="price-high">价格从高到低</option>
+            </select>
+
+            <div className="flex ml-auto">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-l-md ${viewMode === 'grid' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'}`}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-r-md ${viewMode === 'list' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* 筛选选项 */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-700">
+              <div>
+                <label className="block text-sm font-medium mb-2">品牌</label>
+                <select
+                  value={selectedBrandId}
+                  onChange={(e) => setSelectedBrandId(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">所有品牌</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">分类</label>
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">所有分类</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 结果统计 */}
+        <div className="mb-6">
+          <p className="text-gray-400">
+            找到 {filteredEquipment.length} 件装备
+          </p>
+        </div>
+
+        {/* 装备列表 */}
+        <div className={viewMode === 'grid' ? 
+          'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 
+          'space-y-4'
+        }>
+          {filteredEquipment.map((item) => (
+            <div
+              key={item.id}
+              className={`bg-gray-900 rounded-lg p-6 hover:bg-gray-800 transition-colors ${
+                viewMode === 'list' ? 'flex items-center gap-6' : ''
+              }`}
+            >
+              {/* 装备信息 */}
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">{item.name}</h3>
+                    <p className="text-gray-400 text-sm">{item.brands?.name}</p>
+                    <p className="text-gray-500 text-xs">{item.categories?.name}</p>
+                  </div>
+                  {item.msrp_price && (
+                    <span className="text-green-400 font-semibold">
+                      ${item.msrp_price}
+                    </span>
+                  )}
+                </div>
+
+                {/* 评分信息 */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center">
+                    {renderStars(item.average_rating || 0)}
+                  </div>
+                  <span className="text-sm text-gray-400">
+                    {item.average_rating?.toFixed(1) || '0.0'}
+                  </span>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <MessageSquare className="w-3 h-3" />
+                    {item.review_count || 0}
+                  </div>
+                </div>
+
+                {/* 描述 */}
+                {item.description && (
+                  <p className="text-gray-400 text-sm line-clamp-2 mb-4">
+                    {item.description}
+                  </p>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => addToMyEquipment(item)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    添加到我的装备
+                  </button>
+                  <Link
+                    href={`/equipment/${item.id}`}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded-md text-sm hover:bg-gray-800 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    查看详情
+                  </Link>
+                </div>
+              </div>
+
+              {/* 右侧统计信息（列表模式） */}
+              {viewMode === 'list' && (
+                <div className="flex items-center gap-8">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-400">
+                      {item.average_rating?.toFixed(1) || '0.0'}
+                    </div>
+                    <div className="flex justify-center">
+                      {renderStars(item.average_rating || 0, 12)}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {item.review_count || 0} 评价
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* 无结果提示 */}
+        {filteredEquipment.length === 0 && (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-xl font-semibold mb-2">未找到装备</h3>
+            <p className="text-gray-400">
+              尝试调整搜索条件或筛选选项
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default EquipmentBrowser;

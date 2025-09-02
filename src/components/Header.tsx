@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import AppleSignInButton from './AppleSignInButton';
 import LanguageToggle from './LanguageToggle';
-import { User, BarChart3, Home } from 'lucide-react';
+import { User, BarChart3, Home, Package } from 'lucide-react';
 
 export default function Header() {
   const { isAuthenticated, signOut } = useAuth();
@@ -19,6 +19,7 @@ export default function Header() {
   const navigationItems = [
     { name: t('nav_home'), href: '/', icon: Home },
     { name: t('nav_data_analysis'), href: '/workout-analyzer', icon: BarChart3 },
+    { name: '装备库', href: '/equipment-browser', icon: Package },
   ];
 
   const authenticatedItems = [
