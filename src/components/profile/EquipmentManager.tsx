@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,16 +16,22 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Activity
+  Activity,
+  AlertCircle
 } from 'lucide-react';
+import { SubmitEquipmentModal } from './SubmitEquipmentModal';
 
-const equipmentSchema = z.object({
-  sku_id: z.string().min(1, '请选择装备型号'),
+const createEquipmentSchema = (t: (key: string) => string) => z.object({
+  sku_id: z.string().min(1, t('equipment_model_required')),
   purchase_date: z.string().optional().or(z.literal('')),
-  notes: z.string().max(500, '备注不能超过500个字符').optional().or(z.literal('')),
+  notes: z.string().max(500, 'Notes cannot exceed 500 characters').optional().or(z.literal('')),
 });
 
-type EquipmentFormData = z.infer<typeof equipmentSchema>;
+type EquipmentFormData = {
+  sku_id: string;
+  purchase_date?: string;
+  notes?: string;
+};
 
 interface Equipment {
   id: string;
@@ -66,16 +73,17 @@ interface SKU {
   categories?: Category | Category[];
 }
 
-const categoryLabels = {
-  shoes: '🏃‍♂️ 跑鞋',
-  watch: '⌚ 运动手表',
-  bike: '🚴‍♂️ 自行车',
-  clothing: '👕 运动服装',
-  accessories: '🎒 配件',
-};
+const getCategoryLabels = (t: (key: string) => string) => ({
+  shoes: `🏃‍♂️ ${t('Running Shoes')}`,
+  watch: `⌚ ${t('Sports Watch')}`,
+  bike: `🚴‍♂️ ${t('Bicycle')}`,
+  clothing: `👕 ${t('Sports Clothing')}`,
+  accessories: `🎒 ${t('Accessories')}`,
+});
 
 export const EquipmentManager = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,6 +96,10 @@ export const EquipmentManager = () => {
   const [selectedBrandId, setSelectedBrandId] = useState<string>(''); 
   const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   const [filteredSKUs, setFilteredSKUs] = useState<SKU[]>([]);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+
+  const equipmentSchema = createEquipmentSchema(t);
+  const categoryLabels = getCategoryLabels(t);
 
   const {
     register,
@@ -230,10 +242,10 @@ export const EquipmentManager = () => {
 
     setSaving(true);
     try {
-      // 查找选中的SKU信息
+      // Find selected SKU information
       const selectedSKU = skus.find(sku => sku.id === data.sku_id);
       if (!selectedSKU) {
-        alert('请选择有效的装备型号');
+        alert(t('equipment_select_model_error'));
         return;
       }
 
@@ -272,8 +284,8 @@ export const EquipmentManager = () => {
       await loadEquipment();
       handleCancelEdit();
     } catch (error) {
-      console.error('保存装备失败:', error);
-      alert('保存失败，请重试');
+      console.error('Save equipment failed:', error);
+      alert(t('equipment_save_error'));
     } finally {
       setSaving(false);
     }
@@ -367,8 +379,8 @@ export const EquipmentManager = () => {
             <Activity className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold">运动装备</h2>
-            <p className="text-gray-400">管理您的运动装备和使用记录</p>
+            <h2 className="text-2xl font-semibold">{t('equipment_title')}</h2>
+            <p className="text-gray-400">{t('equipment_desc')}</p>
           </div>
         </div>
         
@@ -478,6 +490,33 @@ export const EquipmentManager = () => {
                 {errors.sku_id && (
                   <p className="text-red-400 text-sm mt-1">{errors.sku_id.message}</p>
                 )}
+              </div>
+
+              {/* Submit Missing Equipment */}
+              <div className="md:col-span-3">
+                <div className="bg-blue-900 bg-opacity-20 border border-blue-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-300 mb-2">
+                        Can't find the equipment you're looking for?
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) {
+                            alert('Please login first to submit equipment');
+                            return;
+                          }
+                          setShowSubmitModal(true);
+                        }}
+                        className="text-sm text-blue-400 hover:text-blue-300 underline font-medium"
+                      >
+                        Submit missing equipment for review
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="md:col-span-3">
@@ -653,6 +692,12 @@ export const EquipmentManager = () => {
           ))}
         </div>
       )}
+
+      {/* Submit Equipment Modal */}
+      <SubmitEquipmentModal
+        isOpen={showSubmitModal}
+        onClose={() => setShowSubmitModal(false)}
+      />
     </div>
   );
 };

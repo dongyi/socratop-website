@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import { ExternalLink, Unlink, Activity, MapPin, Clock, Award } from 'lucide-react';
 import Image from 'next/image';
@@ -24,6 +25,7 @@ interface StravaConnection {
 
 export const StravaConnection = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [connection, setConnection] = useState<StravaConnection | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -39,13 +41,13 @@ export const StravaConnection = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('加载Strava连接失败:', error);
+        console.error('Load Strava connection failed:', error);
         return;
       }
 
       setConnection(data);
     } catch (error) {
-      console.error('加载Strava连接时发生错误:', error);
+      console.error('Error loading Strava connection:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export const StravaConnection = () => {
     const redirectUri = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URI;
     
     if (!clientId || !redirectUri) {
-      alert('Strava配置错误，请联系管理员');
+      alert('Strava configuration error, please contact administrator');
       return;
     }
 
@@ -75,7 +77,7 @@ export const StravaConnection = () => {
   const handleDisconnect = async () => {
     if (!user || !connection) return;
 
-    if (!confirm('确定要断开与Strava的连接吗？这将删除所有同步的运动数据。')) {
+    if (!confirm(t('strava_disconnect_confirm'))) {
       return;
     }
 
@@ -90,7 +92,7 @@ export const StravaConnection = () => {
         throw error;
       }
 
-      // 同时删除相关的活动数据
+      // Also delete related activity data
       await getSupabase()
         .from('activities')
         .delete()
@@ -98,10 +100,10 @@ export const StravaConnection = () => {
         .not('strava_activity_id', 'is', null);
 
       setConnection(null);
-      alert('已成功断开Strava连接');
+      alert('Strava connection disconnected successfully');
     } catch (error) {
-      console.error('断开Strava连接失败:', error);
-      alert('断开连接失败，请重试');
+      console.error('Disconnect Strava connection failed:', error);
+      alert('Disconnect failed, please try again');
     } finally {
       setDisconnecting(false);
     }
@@ -122,8 +124,8 @@ export const StravaConnection = () => {
           <Activity className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold">Strava连接</h2>
-          <p className="text-gray-400">连接您的Strava账号以同步运动数据</p>
+          <h2 className="text-2xl font-semibold">{t('strava_connection')}</h2>
+          <p className="text-gray-400">{t('strava_connection_desc')}</p>
         </div>
       </div>
 
@@ -132,23 +134,23 @@ export const StravaConnection = () => {
           <div className="w-24 h-24 mx-auto mb-6 bg-gray-800 rounded-full flex items-center justify-center">
             <Activity className="w-12 h-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">未连接Strava</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('strava_not_connected')}</h3>
           <p className="text-gray-400 mb-6">
-            连接您的Strava账号，我们将为您同步运动数据并提供详细的分析报告
+            {t('strava_connect_desc')}
           </p>
           <div className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-orange-500" />
-                <span>同步路线数据</span>
+                <span>{t('strava_sync_routes')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-orange-500" />
-                <span>记录运动时间</span>
+                <span>{t('strava_record_time')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-orange-500" />
-                <span>分析运动成绩</span>
+                <span>{t('strava_analyze_performance')}</span>
               </div>
             </div>
           </div>
@@ -157,7 +159,7 @@ export const StravaConnection = () => {
             className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
           >
             <ExternalLink className="w-4 h-4" />
-            连接Strava账号
+            {t('strava_connect_button')}
           </button>
         </div>
       ) : (
@@ -165,7 +167,7 @@ export const StravaConnection = () => {
           <div className="flex items-start gap-4 p-4 bg-gray-800 rounded-lg">
             <Image
               src={connection.athlete_data.profile_medium || '/default-avatar.png'}
-              alt="Strava头像"
+              alt="Strava Avatar"
               width={64}
               height={64}
               className="w-16 h-16 rounded-full"
@@ -184,7 +186,7 @@ export const StravaConnection = () => {
                   </p>
                 )}
                 <p className="text-sm">
-                  连接时间: {new Date(connection.created_at).toLocaleDateString('zh-CN')}
+                  {t('strava_connection_time')}: {new Date(connection.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -192,11 +194,11 @@ export const StravaConnection = () => {
               <div className="flex gap-4 text-sm">
                 <div>
                   <div className="font-medium">{connection.athlete_data.follower_count}</div>
-                  <div className="text-gray-400">关注者</div>
+                  <div className="text-gray-400">{t('strava_followers')}</div>
                 </div>
                 <div>
                   <div className="font-medium">{connection.athlete_data.friend_count}</div>
-                  <div className="text-gray-400">关注中</div>
+                  <div className="text-gray-400">{t('strava_following')}</div>
                 </div>
               </div>
             </div>
@@ -205,10 +207,10 @@ export const StravaConnection = () => {
           <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
             <div className="flex items-center gap-2 text-green-400 mb-2">
               <Activity className="w-5 h-5" />
-              <span className="font-medium">连接成功</span>
+              <span className="font-medium">{t('strava_connected')}</span>
             </div>
             <p className="text-sm text-gray-300">
-              您的Strava账号已成功连接。我们将定期同步您的运动数据，为您提供详细的分析报告。
+              {t('strava_connected_desc')}
             </p>
           </div>
 
@@ -223,7 +225,7 @@ export const StravaConnection = () => {
               ) : (
                 <Unlink className="w-4 h-4" />
               )}
-              {disconnecting ? '断开连接中...' : '断开连接'}
+              {disconnecting ? t('strava_disconnecting') : t('strava_disconnect')}
             </button>
             
             <a
@@ -233,7 +235,7 @@ export const StravaConnection = () => {
               className="text-orange-400 hover:text-orange-300 text-sm flex items-center gap-1"
             >
               <ExternalLink className="w-4 h-4" />
-              访问Strava
+              {t('strava_visit')}
             </a>
           </div>
         </div>

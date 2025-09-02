@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppleSignInButton from './AppleSignInButton';
 import LanguageToggle from './LanguageToggle';
 import { User, BarChart3, Home } from 'lucide-react';
@@ -12,6 +13,7 @@ import { User, BarChart3, Home } from 'lucide-react';
 export default function Header() {
   const { isAuthenticated, user, signOut } = useAuth();
   const { t } = useLanguage();
+  const { displayName } = useUserProfile();
   const pathname = usePathname();
 
   const navigationItems = [
@@ -90,7 +92,7 @@ export default function Header() {
                     <User className="w-3.5 h-3.5 text-white" />
                   </div>
                   <span className="hidden 2xl:inline text-xs">
-                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                    {displayName}
                   </span>
                 </Link>
                 <button

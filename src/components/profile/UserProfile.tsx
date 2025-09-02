@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { User, Settings, Save } from 'lucide-react';
 
-const profileSchema = z.object({
-  display_name: z.string().min(1, '请输入显示名称').max(50, '名称不能超过50个字符'),
+const createProfileSchema = (t: (key: string) => string) => z.object({
+  display_name: z.string().min(1, t('profile_display_name_required')).max(50, t('profile_display_name_max_length')),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -17,8 +18,11 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const UserProfile = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const profileSchema = createProfileSchema(t);
 
   const {
     register,
@@ -40,14 +44,14 @@ export const UserProfile = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('加载用户资料失败:', error);
+        console.error('Load user profile failed:', error);
         return;
       }
 
       if (data) {
         setValue('display_name', data.display_name || '');
       } else {
-        // 如果没有资料记录，创建一个
+        // If no profile record, create one
         const { error: insertError } = await getSupabase()
           .from('users_profiles')
           .insert({
@@ -56,13 +60,13 @@ export const UserProfile = () => {
           });
 
         if (insertError) {
-          console.error('创建用户资料失败:', insertError);
+          console.error('Create user profile failed:', insertError);
         } else {
-          loadProfile(); // 重新加载
+          loadProfile(); // Reload
         }
       }
     } catch (error) {
-      console.error('加载用户资料时发生错误:', error);
+      console.error('Error loading user profile:', error);
     } finally {
       setLoading(false);
     }
@@ -92,10 +96,10 @@ export const UserProfile = () => {
       }
 
       // Profile updated successfully
-      alert('资料保存成功！');
+      alert(t('profile_save_success'));
     } catch (error) {
-      console.error('保存用户资料失败:', error);
-      alert('保存失败，请重试');
+      console.error('Save user profile failed:', error);
+      alert(t('profile_save_error'));
     } finally {
       setSaving(false);
     }
@@ -116,15 +120,15 @@ export const UserProfile = () => {
           <User className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold">账户信息</h2>
-          <p className="text-gray-400">管理您的个人资料和账户设置</p>
+          <h2 className="text-2xl font-semibold">{t('profile_account_info')}</h2>
+          <p className="text-gray-400">{t('profile_account_desc')}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            邮箱地址
+            {t('profile_email')}
           </label>
           <input
             type="email"
@@ -132,18 +136,18 @@ export const UserProfile = () => {
             disabled
             className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed"
           />
-          <p className="text-xs text-gray-500 mt-1">邮箱地址无法修改</p>
+          <p className="text-xs text-gray-500 mt-1">{t('profile_email_readonly')}</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            显示名称 *
+            {t('profile_display_name')} *
           </label>
           <input
             type="text"
             {...register('display_name')}
             className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="输入您的显示名称"
+            placeholder={t('profile_display_name_placeholder')}
           />
           {errors.display_name && (
             <p className="text-red-400 text-sm mt-1">{errors.display_name.message}</p>
@@ -152,7 +156,7 @@ export const UserProfile = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            注册时间
+            {t('profile_registration_time')}
           </label>
           <input
             type="text"
@@ -179,12 +183,12 @@ export const UserProfile = () => {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saving ? '保存中...' : '保存更改'}
+            {saving ? t('profile_saving') : t('profile_save_changes')}
           </button>
           
           <div className="flex items-center text-sm text-gray-500">
             <Settings className="w-4 h-4 mr-1" />
-            {isDirty ? '有未保存的更改' : '已同步'}
+            {isDirty ? t('profile_unsaved_changes') : t('profile_synced')}
           </div>
         </div>
       </form>
