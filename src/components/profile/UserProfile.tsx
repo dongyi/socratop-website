@@ -13,7 +13,9 @@ const createProfileSchema = (t: (key: string) => string) => z.object({
   display_name: z.string().min(1, t('profile_display_name_required')).max(50, t('profile_display_name_max_length')),
 });
 
-type ProfileFormData = z.infer<typeof profileSchema>;
+type ProfileFormData = {
+  display_name: string;
+};
 
 
 export const UserProfile = () => {

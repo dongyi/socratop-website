@@ -11,7 +11,7 @@ import LanguageToggle from './LanguageToggle';
 import { User, BarChart3, Home } from 'lucide-react';
 
 export default function Header() {
-  const { isAuthenticated, user, signOut } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { t } = useLanguage();
   const { displayName } = useUserProfile();
   const pathname = usePathname();

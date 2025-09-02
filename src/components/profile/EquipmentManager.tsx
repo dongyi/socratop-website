@@ -499,7 +499,7 @@ export const EquipmentManager = () => {
                     <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm text-blue-300 mb-2">
-                        Can't find the equipment you're looking for?
+                        Can&apos;t find the equipment you&apos;re looking for?
                       </p>
                       <button
                         type="button"

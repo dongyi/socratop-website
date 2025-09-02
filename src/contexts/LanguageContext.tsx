@@ -481,7 +481,7 @@ const translations = {
     equipment_inactive: "已停用",
     equipment_unknown: "未知装备",
     equipment_unknown_category: "未知分类",
-    equipment_delete_confirm: "确定要删除装备"{name}"吗？此操作无法撤销。",
+    equipment_delete_confirm: "确定要删除装备\"{name}\"吗？此操作无法撤销。",
     equipment_cant_find: "找不到您要找的装备？",
     equipment_submit_missing: "提交未收录装备供审核",
     equipment_select_model_error: "请选择有效的装备型号",
