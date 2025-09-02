@@ -437,7 +437,7 @@ const EquipmentBrowser = () => {
                     添加到我的装备
                   </button>
                   <Link
-                    href={`/equipment/${item.id}`}
+                    href={`/equipment-detail?id=${item.id}`}
                     className="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded-md text-sm hover:bg-gray-800 transition-colors"
                   >
                     <Eye className="w-4 h-4" />

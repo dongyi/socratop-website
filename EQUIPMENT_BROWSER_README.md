@@ -19,7 +19,7 @@
   - 添加到我的装备库
   - 查看装备详情
 
-### 2. 装备详情页 (`/equipment/[id]`)
+### 2. 装备详情页 (`/equipment-detail?id=xxx`)
 - **装备信息**：名称、品牌、分类、价格、描述
 - **评分统计**：
   - 平均评分（星级显示）
@@ -86,9 +86,8 @@ src/
 ├── app/
 │   ├── equipment-browser/
 │   │   └── page.tsx                    # 装备浏览器主页
-│   └── equipment/[id]/
-│       ├── page.tsx                    # 装备详情页（服务端）
-│       └── EquipmentDetailClient.tsx   # 装备详情客户端组件
+│   └── equipment-detail/
+│       └── page.tsx                    # 装备详情页（使用查询参数）
 ├── components/
 │   └── equipment/
 │       └── EquipmentReviewModal.tsx    # 评价模态框组件
@@ -116,7 +115,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 1. 访问 `/equipment-browser` 
 2. 使用搜索框或筛选器查找感兴趣的装备
 3. 选择排序方式和显示模式
-4. 点击"查看详情"了解装备详细信息
+4. 点击"查看详情"跳转到装备详情页 (`/equipment-detail?id=xxx`)
 
 ### 添加装备到个人库
 1. 在装备浏览器或详情页点击"添加到我的装备"
