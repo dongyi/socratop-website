@@ -425,7 +425,7 @@ export const EquipmentManager = () => {
                   }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">请先选择分类</option>
+                  <option value="">{t('equipment_select_category')}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
@@ -434,7 +434,7 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  品牌 *
+                  {t('equipment_brand')} *
                 </label>
                 <select
                   value={selectedBrandId}
@@ -447,10 +447,10 @@ export const EquipmentManager = () => {
                 >
                   <option value="">
                     {!selectedCategoryId 
-                      ? '请先选择分类' 
+                      ? t('equipment_category_required') 
                       : filteredBrands.length === 0 
-                        ? '该分类下暂无品牌' 
-                        : '选择品牌'
+                        ? t('equipment_no_brands') 
+                        : t('equipment_select_brand')
                     }
                   </option>
                   {filteredBrands.map((brand) => (
@@ -461,7 +461,7 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  装备型号 *
+                  {t('equipment_model')} *
                 </label>
                 <select
                   {...register('sku_id')}
@@ -470,12 +470,12 @@ export const EquipmentManager = () => {
                 >
                   <option value="">
                     {!selectedCategoryId 
-                      ? '请先选择分类' 
+                      ? t('equipment_category_required') 
                       : !selectedBrandId
-                        ? '请先选择品牌'
+                        ? t('equipment_brand_required')
                         : filteredSKUs.length === 0 
-                          ? '该品牌下暂无型号' 
-                          : '选择装备型号'
+                          ? t('equipment_no_models') 
+                          : t('equipment_select_model')
                     }
                   </option>
                   {filteredSKUs
@@ -521,7 +521,7 @@ export const EquipmentManager = () => {
 
               <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  购买日期
+                  {t('equipment_purchase_date')}
                 </label>
                 <input
                   type="date"
@@ -533,13 +533,13 @@ export const EquipmentManager = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                备注
+                {t('equipment_notes')}
               </label>
               <textarea
                 {...register('notes')}
                 rows={3}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="记录购买渠道、价格或其他信息..."
+                placeholder={t('equipment_notes_placeholder')}
               />
             </div>
 
@@ -554,7 +554,7 @@ export const EquipmentManager = () => {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {saving ? '保存中...' : '保存装备'}
+                {saving ? t('equipment_saving') : t('equipment_save')}
               </button>
               
               <button
@@ -562,7 +562,7 @@ export const EquipmentManager = () => {
                 onClick={handleCancelEdit}
                 className="px-6 py-2 border border-gray-600 text-gray-300 rounded-md hover:bg-gray-800 transition-colors"
               >
-                取消
+                {t('equipment_cancel')}
               </button>
             </div>
           </form>
@@ -574,16 +574,16 @@ export const EquipmentManager = () => {
           <div className="w-24 h-24 mx-auto mb-6 bg-gray-800 rounded-full flex items-center justify-center">
             <Activity className="w-12 h-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">还没有装备记录</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('equipment_no_records')}</h3>
           <p className="text-gray-400 mb-6">
-            添加您的运动装备，跟踪使用情况和里程数
+            {t('equipment_no_records_desc')}
           </p>
           <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
-            添加第一个装备
+            {t('equipment_add_first')}
           </button>
         </div>
       ) : (
@@ -607,7 +607,7 @@ export const EquipmentManager = () => {
                         const skuName = item.skus?.name;
                         const displayName = [brandName, skuName].filter(Boolean).join(' ');
                         console.log('装备显示信息:', { item, brandName, skuName, displayName });
-                        return displayName || '未知装备';
+                        return displayName || t('equipment_unknown');
                       })()}
                     </h3>
                     {item.categories && (
@@ -625,7 +625,7 @@ export const EquipmentManager = () => {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id, [item.brands?.name, item.skus?.name].filter(Boolean).join(' ') || '未知装备')}
+                    onClick={() => handleDelete(item.id, [item.brands?.name, item.skus?.name].filter(Boolean).join(' ') || t('equipment_unknown'))}
                     className="p-1 text-gray-400 hover:text-red-400"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -637,7 +637,7 @@ export const EquipmentManager = () => {
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1 text-gray-400">
                     <MapPin className="w-3 h-3" />
-                    总里程
+                    {t('equipment_total_distance')}
                   </span>
                   <span className="font-medium">
                     {item.total_distance > 0 ? `${item.total_distance.toFixed(1)} km` : '0 km'}
@@ -647,10 +647,10 @@ export const EquipmentManager = () => {
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1 text-gray-400">
                     <Clock className="w-3 h-3" />
-                    使用时间
+                    {t('equipment_usage_time')}
                   </span>
                   <span className="font-medium">
-                    {item.total_hours > 0 ? `${item.total_hours.toFixed(1)} 小时` : '0 小时'}
+                    {item.total_hours > 0 ? `${item.total_hours.toFixed(1)} hours` : '0 hours'}
                   </span>
                 </div>
 
@@ -658,7 +658,7 @@ export const EquipmentManager = () => {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1 text-gray-400">
                       <Calendar className="w-3 h-3" />
-                      购买日期
+                      {t('equipment_purchase_date')}
                     </span>
                     <span className="font-medium">
                       {new Date(item.purchase_date).toLocaleDateString('zh-CN')}
@@ -682,10 +682,10 @@ export const EquipmentManager = () => {
                       : 'bg-gray-700 text-gray-400'
                   }`}
                 >
-                  {item.is_active ? '使用中' : '已停用'}
+                  {item.is_active ? t('equipment_active') : t('equipment_inactive')}
                 </button>
                 <span className="text-xs text-gray-500">
-                  {item.categories?.name && categoryLabels[item.categories.name as keyof typeof categoryLabels]?.split(' ').slice(1).join(' ') || item.categories?.name || '未知分类'}
+                  {item.categories?.name && categoryLabels[item.categories.name as keyof typeof categoryLabels]?.split(' ').slice(1).join(' ') || item.categories?.name || t('equipment_unknown_category')}
                 </span>
               </div>
             </div>
