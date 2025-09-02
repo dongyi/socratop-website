@@ -61,11 +61,21 @@ const EquipmentBrowser = () => {
   
   // 筛选和搜索状态
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // 用于输入框的即时更新
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('rating-high');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
+
+  // 无限滚动状态
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // 每页加载数量
+  const PAGE_SIZE = 20;
 
   // 加载基础数据
   const loadBrandsAndCategories = useCallback(async () => {
@@ -97,8 +107,29 @@ const EquipmentBrowser = () => {
     }
   }, []);
 
-  // 加载装备数据
-  const loadEquipment = useCallback(async () => {
+
+  // 构建排序查询
+  const getSortQuery = useCallback(() => {
+    switch (sortBy) {
+      case 'name':
+        return 'name.asc';
+      case 'price-low':
+        return 'msrp_price.asc.nullslast';
+      case 'price-high':
+        return 'msrp_price.desc.nullsfirst';
+      default:
+        return 'name.asc'; // 默认按名称排序，评分排序在客户端处理
+    }
+  }, [sortBy]);
+
+  // 加载装备数据（支持分页）
+  const loadEquipment = useCallback(async (pageNum: number = 0, append: boolean = false) => {
+    if (pageNum === 0) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -106,8 +137,10 @@ const EquipmentBrowser = () => {
       const headers = {
         'apikey': supabaseAnonKey!,
         'Content-Type': 'application/json',
+        'Prefer': 'count=exact', // 获取总数
       };
 
+      // 构建查询URL
       let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,brands:brand_id(id,name),categories:category_id(id,name)`;
       
       // 添加筛选条件
@@ -118,15 +151,35 @@ const EquipmentBrowser = () => {
       if (selectedCategoryId) {
         filters.push(`category_id=eq.${selectedCategoryId}`);
       }
+      if (searchQuery.trim()) {
+        // 搜索名称和品牌
+        filters.push(`or=(name.ilike.*${searchQuery.trim()}*,brands.name.ilike.*${searchQuery.trim()}*)`);
+      }
       
       if (filters.length > 0) {
         query += `&${filters.join('&')}`;
       }
 
+      // 添加排序
+      query += `&order=${getSortQuery()}`;
+      
+      // 添加分页
+      const offset = pageNum * PAGE_SIZE;
+      query += `&limit=${PAGE_SIZE}&offset=${offset}`;
+
       const response = await fetch(query, { headers });
       
       if (response.ok) {
         const equipmentData = await response.json();
+        
+        // 获取总数
+        const contentRange = response.headers.get('content-range');
+        const total = contentRange ? parseInt(contentRange.split('/')[1]) : equipmentData.length;
+        setTotalCount(total);
+        
+        // 检查是否还有更多数据
+        const newHasMore = offset + equipmentData.length < total;
+        setHasMore(newHasMore);
         
         // 加载评分数据
         const equipmentWithRatings = await Promise.all(
@@ -134,7 +187,7 @@ const EquipmentBrowser = () => {
             try {
               const ratingResponse = await fetch(
                 `${supabaseUrl}/rest/v1/equipment_ratings?select=*&sku_id=eq.${item.id}`,
-                { headers }
+                { headers: { 'apikey': supabaseAnonKey!, 'Content-Type': 'application/json' } }
               );
               
               if (ratingResponse.ok) {
@@ -161,54 +214,87 @@ const EquipmentBrowser = () => {
           })
         );
         
-        setEquipment(equipmentWithRatings);
+        if (append) {
+          setEquipment(prev => [...prev, ...equipmentWithRatings]);
+        } else {
+          setEquipment(equipmentWithRatings);
+        }
       }
     } catch (error) {
       console.error('加载装备数据失败:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [selectedBrandId, selectedCategoryId]);
+  }, [selectedBrandId, selectedCategoryId, searchQuery, sortBy, getSortQuery]);
+
+  // 加载更多数据
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadEquipment(nextPage, true);
+    }
+  }, [loadEquipment, page, loadingMore, hasMore]);
+
+  // 重置并重新加载
+  const resetAndReload = useCallback(() => {
+    setPage(0);
+    setHasMore(true);
+    setEquipment([]);
+    loadEquipment(0, false);
+  }, [loadEquipment]);
+
+  // 用独立的effect来处理resetAndReload的触发
+  const triggerReload = useCallback(() => {
+    resetAndReload();
+  }, [resetAndReload]);
 
   useEffect(() => {
     loadBrandsAndCategories();
   }, [loadBrandsAndCategories]);
 
+  // 搜索防抖
   useEffect(() => {
-    loadEquipment();
-  }, [loadEquipment]);
+    const timeoutId = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
 
-  // 搜索和排序过滤
-  const filteredEquipment = equipment
-    .filter(item => {
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        return (
-          item.name.toLowerCase().includes(query) ||
-          item.brands?.name.toLowerCase().includes(query) ||
-          item.description?.toLowerCase().includes(query)
-        );
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
+
+  useEffect(() => {
+    triggerReload();
+  }, [selectedBrandId, selectedCategoryId, searchQuery, sortBy, triggerReload]);
+
+  // 无限滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 1000 >= 
+        document.documentElement.offsetHeight
+      ) {
+        loadMore();
       }
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'price-low':
-          return (a.msrp_price || 0) - (b.msrp_price || 0);
-        case 'price-high':
-          return (b.msrp_price || 0) - (a.msrp_price || 0);
-        case 'rating-high':
-          return (b.average_rating || 0) - (a.average_rating || 0);
-        case 'rating-low':
-          return (a.average_rating || 0) - (b.average_rating || 0);
-        case 'reviews-most':
-          return (b.review_count || 0) - (a.review_count || 0);
-        default:
-          return 0;
-      }
-    });
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
+
+  // 客户端排序（仅用于评分相关排序，因为无法在数据库层面跨表排序）
+  const sortedEquipment = [...equipment].sort((a, b) => {
+    switch (sortBy) {
+      case 'rating-high':
+        return (b.average_rating || 0) - (a.average_rating || 0);
+      case 'rating-low':
+        return (a.average_rating || 0) - (b.average_rating || 0);
+      case 'reviews-most':
+        return (b.review_count || 0) - (a.review_count || 0);
+      default:
+        return 0; // 其他排序已在服务端处理
+    }
+  });
 
   // 添加到个人装备库
   const addToMyEquipment = async (sku: Equipment) => {
@@ -292,8 +378,8 @@ const EquipmentBrowser = () => {
             <input
               type="text"
               placeholder="搜索装备名称或品牌..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -375,7 +461,7 @@ const EquipmentBrowser = () => {
         {/* 结果统计 */}
         <div className="mb-6">
           <p className="text-gray-400">
-            找到 {filteredEquipment.length} 件装备
+            找到 {totalCount} 件装备 {equipment.length > 0 && equipment.length < totalCount && `(已显示 ${equipment.length} 件)`}
           </p>
         </div>
 
@@ -384,7 +470,7 @@ const EquipmentBrowser = () => {
           'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 
           'space-y-4'
         }>
-          {filteredEquipment.map((item) => (
+          {sortedEquipment.map((item) => (
             <div
               key={item.id}
               className={`bg-gray-900 rounded-lg p-6 hover:bg-gray-800 transition-colors ${
@@ -466,8 +552,25 @@ const EquipmentBrowser = () => {
           ))}
         </div>
 
+        {/* 加载更多按钮或加载状态 */}
+        {loadingMore && (
+          <div className="flex justify-center py-8">
+            <div className="flex items-center gap-3">
+              <Loader className="w-6 h-6 animate-spin" />
+              <span className="text-gray-400">加载更多装备...</span>
+            </div>
+          </div>
+        )}
+
+        {/* 已加载全部提示 */}
+        {!hasMore && equipment.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-400">已显示全部装备</p>
+          </div>
+        )}
+
         {/* 无结果提示 */}
-        {filteredEquipment.length === 0 && (
+        {!loading && sortedEquipment.length === 0 && (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <h3 className="text-xl font-semibold mb-2">未找到装备</h3>

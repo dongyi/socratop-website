@@ -45,6 +45,11 @@ The application uses Supabase with the following main tables:
 - Language preference is stored in localStorage
 - Browser language detection only applies on first visit
 
+**IMPORTANT**: All hardcoded text in components MUST be in English by default. When adding new navigation items or UI text, always use English first:
+- Navigation: Use "Equipment Browser" not "装备库"
+- UI elements should use English text by default
+- Only use Chinese text when explicitly required by user context or when using translation functions
+
 ## Architecture
 - **Frontend**: Next.js 15 with React 19
 - **Styling**: Tailwind CSS 4

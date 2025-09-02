@@ -19,7 +19,7 @@ export default function Header() {
   const navigationItems = [
     { name: t('nav_home'), href: '/', icon: Home },
     { name: t('nav_data_analysis'), href: '/workout-analyzer', icon: BarChart3 },
-    { name: '装备库', href: '/equipment-browser', icon: Package },
+    { name: 'Equipment Browser', href: '/equipment-browser', icon: Package },
   ];
 
   const authenticatedItems = [
