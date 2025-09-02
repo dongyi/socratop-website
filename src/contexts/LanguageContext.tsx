@@ -145,6 +145,12 @@ const translations = {
     back_to_home: "Back to Home",
     personal_center: "Personal Center",
     
+    // Profile Page
+    profile_page_title: "Personal Center",
+    profile_tab_account: "Account Info",
+    profile_tab_strava: "Strava Connection", 
+    profile_tab_equipment: "Sports Equipment",
+    
     // Debug
     debug_status: "Debug Status",
     
@@ -399,6 +405,12 @@ const translations = {
     try_experience: "体验试用",
     back_to_home: "返回首页",
     personal_center: "个人中心",
+    
+    // Profile Page
+    profile_page_title: "个人中心",
+    profile_tab_account: "账户信息",
+    profile_tab_strava: "Strava连接", 
+    profile_tab_equipment: "运动装备",
     
     // Debug
     debug_status: "调试状态",

@@ -43,7 +43,7 @@ const categories = [
   { id: 'accessories', name: 'Accessories' },
 ];
 
-export const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
+const SubmitEquipmentModal: React.FC<SubmitEquipmentModalProps> = ({
   isOpen,
   onClose,
   requireLogin = true

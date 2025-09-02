@@ -19,7 +19,7 @@ import {
   Activity,
   AlertCircle
 } from 'lucide-react';
-import { SubmitEquipmentModal } from './SubmitEquipmentModal';
+import SubmitEquipmentModal from './SubmitEquipmentModal';
 
 const createEquipmentSchema = (t: (key: string) => string) => z.object({
   sku_id: z.string().min(1, t('equipment_model_required')),
@@ -321,7 +321,7 @@ export const EquipmentManager = () => {
   const handleDelete = async (id: string, displayName: string) => {
     if (!user) return;
 
-    if (!confirm(`确定要删除装备"${displayName}"吗？此操作无法撤销。`)) {
+    if (!confirm(t('equipment_delete_confirm').replace('{name}', displayName))) {
       return;
     }
 
@@ -337,7 +337,7 @@ export const EquipmentManager = () => {
       await loadEquipment();
     } catch (error) {
       console.error('删除装备失败:', error);
-      alert('删除失败，请重试');
+      alert(t('equipment_delete_error'));
     }
   };
 
@@ -359,7 +359,7 @@ export const EquipmentManager = () => {
       await loadEquipment();
     } catch (error) {
       console.error('更新装备状态失败:', error);
-      alert('更新失败，请重试');
+      alert(t('equipment_update_error'));
     }
   };
 
@@ -390,7 +390,7 @@ export const EquipmentManager = () => {
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
-            添加装备
+            {t('equipment_add')}
           </button>
         )}
       </div>
@@ -399,7 +399,7 @@ export const EquipmentManager = () => {
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
-              {editingId ? '编辑装备' : '添加新装备'}
+              {editingId ? t('equipment_edit') : t('equipment_add_new')}
             </h3>
             <button
               onClick={handleCancelEdit}
@@ -414,7 +414,7 @@ export const EquipmentManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  分类 *
+                  {t('equipment_category')} *
                 </label>
                 <select
                   value={selectedCategoryId}
