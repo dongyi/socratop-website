@@ -239,9 +239,19 @@ const EquipmentBrowser = () => {
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
+  // 只有影响服务端查询的参数才需要重新加载数据
+  // 评分排序在客户端处理，不需要重新加载
   useEffect(() => {
     triggerReload();
-  }, [selectedBrandId, selectedCategoryId, searchQuery, sortBy, triggerReload]);
+  }, [selectedBrandId, selectedCategoryId, searchQuery, triggerReload]);
+
+  // sortBy 单独处理，避免评分排序时重复加载
+  useEffect(() => {
+    // 只有非评分排序才需要重新从服务端加载
+    if (!['rating-high', 'rating-low', 'reviews-most'].includes(sortBy)) {
+      triggerReload();
+    }
+  }, [sortBy, triggerReload]);
 
   // 无限滚动监听
   useEffect(() => {
