@@ -41,7 +41,7 @@ interface Equipment {
   brand_id: string;
   category_id: string;
   rating?: number; // SKU 原始评分
-  image_url?: string; // 装备图片
+  image_urls?: string[]; // 装备图片列表
   brands?: Brand;
   categories?: Category;
   // 评分信息
@@ -143,7 +143,7 @@ const EquipmentBrowser = () => {
       };
 
       // 构建查询URL
-      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,rating,image_url,brands:brand_id(id,name),categories:category_id(id,name)`;
+      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,rating,image_urls,brands:brand_id(id,name),categories:category_id(id,name)`;
       
       // 添加筛选条件
       const filters: string[] = [];
@@ -468,7 +468,7 @@ const EquipmentBrowser = () => {
               {viewMode === 'grid' && (
                 <div className="aspect-video w-full mb-4 bg-gray-800 relative overflow-hidden">
                   <img
-                    src={item.image_url || '/images/equipment-placeholder.png'}
+                    src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
                     alt={item.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -481,7 +481,7 @@ const EquipmentBrowser = () => {
               {viewMode === 'list' && (
                 <div className="w-20 h-20 mr-4 bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
                   <img
-                    src={item.image_url || '/images/equipment-placeholder.png'}
+                    src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
                     alt={item.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
