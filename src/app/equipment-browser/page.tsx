@@ -40,6 +40,7 @@ interface Equipment {
   msrp_price?: number;
   brand_id: string;
   category_id: string;
+  rating?: number; // SKU 原始评分
   brands?: Brand;
   categories?: Category;
   // 评分信息
@@ -141,7 +142,7 @@ const EquipmentBrowser = () => {
       };
 
       // 构建查询URL
-      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,brands:brand_id(id,name),categories:category_id(id,name)`;
+      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,rating,brands:brand_id(id,name),categories:category_id(id,name)`;
       
       // 添加筛选条件
       const filters: string[] = [];
@@ -181,67 +182,13 @@ const EquipmentBrowser = () => {
         const newHasMore = offset + equipmentData.length < total;
         setHasMore(newHasMore);
         
-        // 加载评分数据
-        const equipmentWithRatings = await Promise.all(
-          equipmentData.map(async (item: Equipment) => {
-            try {
-              // 首先尝试从汇总表获取
-              const ratingResponse = await fetch(
-                `${supabaseUrl}/rest/v1/equipment_ratings?select=*&sku_id=eq.${item.id}`,
-                { headers: { 'apikey': supabaseAnonKey!, 'Content-Type': 'application/json' } }
-              );
-              
-              if (ratingResponse.ok) {
-                const ratingData = await ratingResponse.json();
-                if (ratingData && ratingData.length > 0) {
-                  return {
-                    ...item,
-                    average_rating: parseFloat(ratingData[0].average_rating),
-                    review_count: ratingData[0].review_count,
-                    rating_distribution: ratingData[0].rating_distribution
-                  };
-                }
-              }
-              
-              // 如果汇总表没有数据，从评论表实时计算
-              const reviewResponse = await fetch(
-                `${supabaseUrl}/rest/v1/equipment_reviews?select=rating&sku_id=eq.${item.id}`,
-                { headers: { 'apikey': supabaseAnonKey!, 'Content-Type': 'application/json' } }
-              );
-              
-              if (reviewResponse.ok) {
-                const reviewData = await reviewResponse.json();
-                if (reviewData && reviewData.length > 0) {
-                  const ratings = reviewData.map((r: { rating: number }) => r.rating);
-                  const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
-                  const reviewCount = ratings.length;
-                  
-                  // 计算评分分布
-                  const distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
-                  ratings.forEach((rating: number) => {
-                    distribution[rating.toString() as keyof typeof distribution]++;
-                  });
-                  
-                  return {
-                    ...item,
-                    average_rating: averageRating,
-                    review_count: reviewCount,
-                    rating_distribution: distribution
-                  };
-                }
-              }
-            } catch (error) {
-              console.error('加载评分数据失败:', error);
-            }
-            
-            return {
-              ...item,
-              average_rating: 0,
-              review_count: 0,
-              rating_distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
-            };
-          })
-        );
+        // 直接使用 SKU 自带的 rating 字段
+        const equipmentWithRatings = equipmentData.map((item: Equipment) => ({
+          ...item,
+          average_rating: item.rating || 0,
+          review_count: 0, // SKU 表没有评论数量，暂时设为 0
+          rating_distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+        }));
         
         if (append) {
           setEquipment(prev => [...prev, ...equipmentWithRatings]);
