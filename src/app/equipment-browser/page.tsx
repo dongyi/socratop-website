@@ -182,10 +182,10 @@ const EquipmentBrowser = () => {
         const newHasMore = offset + equipmentData.length < total;
         setHasMore(newHasMore);
         
-        // 直接使用 SKU 自带的 rating 字段
+        // 将百分制 rating 转换为 5 星制
         const equipmentWithRatings = equipmentData.map((item: Equipment) => ({
           ...item,
-          average_rating: item.rating || 0,
+          average_rating: item.rating ? (item.rating / 100) * 5 : 0,
           review_count: 0, // SKU 表没有评论数量，暂时设为 0
           rating_distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
         }));
