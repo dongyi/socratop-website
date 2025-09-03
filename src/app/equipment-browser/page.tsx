@@ -185,6 +185,7 @@ const EquipmentBrowser = () => {
         const equipmentWithRatings = await Promise.all(
           equipmentData.map(async (item: Equipment) => {
             try {
+              // 首先尝试从汇总表获取
               const ratingResponse = await fetch(
                 `${supabaseUrl}/rest/v1/equipment_ratings?select=*&sku_id=eq.${item.id}`,
                 { headers: { 'apikey': supabaseAnonKey!, 'Content-Type': 'application/json' } }
@@ -195,9 +196,37 @@ const EquipmentBrowser = () => {
                 if (ratingData && ratingData.length > 0) {
                   return {
                     ...item,
-                    average_rating: ratingData[0].average_rating,
+                    average_rating: parseFloat(ratingData[0].average_rating),
                     review_count: ratingData[0].review_count,
                     rating_distribution: ratingData[0].rating_distribution
+                  };
+                }
+              }
+              
+              // 如果汇总表没有数据，从评论表实时计算
+              const reviewResponse = await fetch(
+                `${supabaseUrl}/rest/v1/equipment_reviews?select=rating&sku_id=eq.${item.id}`,
+                { headers: { 'apikey': supabaseAnonKey!, 'Content-Type': 'application/json' } }
+              );
+              
+              if (reviewResponse.ok) {
+                const reviewData = await reviewResponse.json();
+                if (reviewData && reviewData.length > 0) {
+                  const ratings = reviewData.map((r: any) => r.rating);
+                  const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
+                  const reviewCount = ratings.length;
+                  
+                  // 计算评分分布
+                  const distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+                  ratings.forEach((rating: number) => {
+                    distribution[rating.toString() as keyof typeof distribution]++;
+                  });
+                  
+                  return {
+                    ...item,
+                    average_rating: averageRating,
+                    review_count: reviewCount,
+                    rating_distribution: distribution
                   };
                 }
               }

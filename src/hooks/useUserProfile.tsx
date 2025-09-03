@@ -28,7 +28,7 @@ export default function useUserProfile() {
         const { data, error } = await getSupabase()
           .from('users_profiles')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') {
