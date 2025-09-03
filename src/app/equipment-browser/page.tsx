@@ -41,6 +41,7 @@ interface Equipment {
   brand_id: string;
   category_id: string;
   rating?: number; // SKU 原始评分
+  image_url?: string; // 装备图片
   brands?: Brand;
   categories?: Category;
   // 评分信息
@@ -142,7 +143,7 @@ const EquipmentBrowser = () => {
       };
 
       // 构建查询URL
-      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,rating,brands:brand_id(id,name),categories:category_id(id,name)`;
+      let query = `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,rating,image_url,brands:brand_id(id,name),categories:category_id(id,name)`;
       
       // 添加筛选条件
       const filters: string[] = [];
@@ -459,12 +460,39 @@ const EquipmentBrowser = () => {
           {sortedEquipment.map((item) => (
             <div
               key={item.id}
-              className={`bg-gray-900 rounded-lg p-6 hover:bg-gray-800 transition-colors ${
+              className={`bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-colors ${
                 viewMode === 'list' ? 'flex items-center gap-6' : ''
               }`}
             >
+              {/* 装备头图 */}
+              {viewMode === 'grid' && (
+                <div className="aspect-video w-full mb-4 bg-gray-800 relative overflow-hidden">
+                  <img
+                    src={item.image_url || '/images/equipment-placeholder.png'}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
+                    }}
+                  />
+                </div>
+              )}
+              {/* 列表模式头图 */}
+              {viewMode === 'list' && (
+                <div className="w-20 h-20 mr-4 bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
+                  <img
+                    src={item.image_url || '/images/equipment-placeholder.png'}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
+                    }}
+                  />
+                </div>
+              )}
+
               {/* 装备信息 */}
-              <div className="flex-1">
+              <div className={viewMode === 'grid' ? 'p-6 pt-0' : 'flex-1'}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-lg">{item.name}</h3>

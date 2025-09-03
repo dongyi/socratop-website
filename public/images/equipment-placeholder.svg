@@ -1,0 +1,27 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4B5563;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="400" height="300" fill="url(#gradient)" />
+  
+  <!-- 装备图标 -->
+  <g transform="translate(200,150)">
+    <!-- 外框 -->
+    <rect x="-60" y="-40" width="120" height="80" rx="8" fill="#6B7280" opacity="0.3"/>
+    
+    <!-- 装备符号 -->
+    <circle cx="0" cy="-10" r="15" fill="#9CA3AF" opacity="0.7"/>
+    <rect x="-20" y="0" width="40" height="25" rx="4" fill="#9CA3AF" opacity="0.7"/>
+    <rect x="-15" y="5" width="30" height="3" fill="#D1D5DB" opacity="0.8"/>
+    <rect x="-15" y="12" width="30" height="3" fill="#D1D5DB" opacity="0.8"/>
+    <rect x="-15" y="19" width="30" height="3" fill="#D1D5DB" opacity="0.8"/>
+  </g>
+  
+  <!-- 文字 -->
+  <text x="200" y="220" text-anchor="middle" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="16" opacity="0.8">暂无图片</text>
+</svg>
