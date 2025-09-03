@@ -212,7 +212,7 @@ const EquipmentBrowser = () => {
               if (reviewResponse.ok) {
                 const reviewData = await reviewResponse.json();
                 if (reviewData && reviewData.length > 0) {
-                  const ratings = reviewData.map((r: any) => r.rating);
+                  const ratings = reviewData.map((r: { rating: number }) => r.rating);
                   const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
                   const reviewCount = ratings.length;
                   
@@ -255,7 +255,7 @@ const EquipmentBrowser = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedBrandId, selectedCategoryId, searchQuery, sortBy, getSortQuery]);
+  }, [selectedBrandId, selectedCategoryId, searchQuery, getSortQuery]);
 
   // 加载更多数据
   const loadMore = useCallback(() => {
