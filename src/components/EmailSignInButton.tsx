@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getSupabase } from '@/lib/supabase';
 
 interface EmailSignInButtonProps {
@@ -15,6 +16,11 @@ export default function EmailSignInButton({ className = "" }: EmailSignInButtonP
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,10 +67,10 @@ export default function EmailSignInButton({ className = "" }: EmailSignInButtonP
     setIsSignUp(false);
   };
 
-  if (showForm) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
-        <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-700 relative max-h-[80vh] overflow-y-auto shadow-2xl">
+  if (showForm && mounted) {
+    const modalContent = (
+      <div className="fixed top-0 left-0 w-full h-full bg-black/50 z-[9999] flex items-center justify-center p-4">
+        <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-700 max-h-[80vh] overflow-y-auto shadow-2xl transform translate-y-0">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-white">
               {isSignUp ? 'Create Account' : 'Sign In'}
@@ -144,6 +150,8 @@ export default function EmailSignInButton({ className = "" }: EmailSignInButtonP
         </div>
       </div>
     );
+
+    return createPortal(modalContent, document.body);
   }
 
   return (
