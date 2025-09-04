@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import AppleSignInButton from './AppleSignInButton';
+import EmailSignInButton from './EmailSignInButton';
 import LanguageToggle from './LanguageToggle';
 import { User, BarChart3, Home, Package } from 'lucide-react';
 
@@ -104,7 +105,10 @@ export default function Header() {
                 </button>
               </div>
             ) : (
-              <AppleSignInButton className="text-sm shrink-0" />
+              <div className="flex items-center gap-2">
+                <EmailSignInButton className="text-sm shrink-0" />
+                <AppleSignInButton className="text-sm shrink-0" />
+              </div>
             )}
             
             <LanguageToggle className="shrink-0" />
