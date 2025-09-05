@@ -474,28 +474,29 @@ const EquipmentBrowser = () => {
               }`}
             >
               {viewMode === 'grid' ? (
-                // 网格模式：水平布局，图片左侧，信息右侧
-                <div className="flex h-full">
-                  {/* 左侧图片区域 - 占30%宽度 */}
-                  <div className="w-[30%] bg-gray-800 relative overflow-hidden rounded-l-xl">
+                // 网格模式：图片在左上角，内容填充其余空间
+                <div className="p-4 h-full relative">
+                  {/* 左上角图片区域 - 保持原始比例 */}
+                  <div className="w-24 h-24 bg-gray-800 relative overflow-hidden rounded-lg float-left mr-3 mb-3">
                     <img
                       src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
                       }}
                     />
-                    {/* 价格标签 */}
-                    {item.msrp_price && (
-                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-md">
-                        ${item.msrp_price}
-                      </div>
-                    )}
                   </div>
 
-                  {/* 右侧内容区域 - 占70%宽度 */}
-                  <div className="w-[70%] p-4 flex flex-col justify-between">
+                  {/* 价格标签 - 右上角 */}
+                  {item.msrp_price && (
+                    <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-md">
+                      ${item.msrp_price}
+                    </div>
+                  )}
+
+                  {/* 内容区域 */}
+                  <div className="flex flex-col justify-between h-full">
                     {/* 顶部：产品信息 */}
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg mb-1 leading-tight" style={{
