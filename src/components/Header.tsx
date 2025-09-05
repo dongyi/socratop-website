@@ -17,13 +17,13 @@ export default function Header() {
   const pathname = usePathname();
 
   const navigationItems = [
-    { name: t('nav_home'), href: '/', icon: Home },
-    { name: t('nav_data_analysis'), href: '/workout-analyzer', icon: BarChart3 },
-    { name: 'Equipment Browser', href: '/equipment-browser', icon: Package },
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'Analysis', href: '/workout-analyzer', icon: BarChart3 },
+    { name: 'Equipment', href: '/equipment-browser', icon: Package },
   ];
 
   const authenticatedItems = [
-    { name: t('nav_personal_center'), href: '/profile', icon: User },
+    { name: 'Profile', href: '/profile', icon: User },
   ];
 
   return (

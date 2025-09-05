@@ -13,10 +13,12 @@ import {
   Save,
   Loader
 } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 const reviewSchema = z.object({
   rating: z.number().min(1, '请选择评分').max(5, '评分不能超过5星'),
   review_content: z.string().min(1, '请填写评论内容').max(2000, '评论内容不能超过2000字符'),
+  image_urls: z.array(z.string()).optional().default([]),
 });
 
 type ReviewFormData = z.infer<typeof reviewSchema>;
@@ -36,6 +38,7 @@ interface EquipmentReviewModalProps {
     id: string;
     rating: number;
     review_content?: string;
+    image_urls?: string[];
   } | null;
 }
 
@@ -62,10 +65,12 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
     defaultValues: {
       rating: existingReview?.rating || 0,
       review_content: existingReview?.review_content || '',
+      image_urls: existingReview?.image_urls || [],
     }
   });
 
   const currentRating = watch('rating');
+  const currentImages = watch('image_urls') || [];
 
   const handleClose = () => {
     reset();
@@ -96,6 +101,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       sku_id: equipment.id,
       rating: data.rating,
       review_content: data.review_content,
+      image_urls: data.image_urls || [],
     };
 
     console.log('准备提交评论数据:', reviewData);
@@ -125,6 +131,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
           .update({
             rating: finalReviewData.rating,
             review_content: finalReviewData.review_content,
+            image_urls: finalReviewData.image_urls,
           })
           .eq('id', existingReview.id)
           .eq('user_id', currentUser.id);
@@ -284,6 +291,22 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
               />
               {errors.review_content && (
                 <p className="text-red-400 text-sm mt-1">{errors.review_content.message}</p>
+              )}
+            </div>
+
+            {/* 图片上传 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                上传图片
+              </label>
+              <ImageUpload
+                images={currentImages}
+                onImagesChange={(images) => setValue('image_urls', images)}
+                maxImages={5}
+                disabled={saving}
+              />
+              {errors.image_urls && (
+                <p className="text-red-400 text-sm mt-1">{errors.image_urls.message}</p>
               )}
             </div>
 

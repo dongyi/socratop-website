@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 // import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import EquipmentReviewModal from '@/components/equipment/EquipmentReviewModal';
+import ReviewImages from '@/components/equipment/ReviewImages';
 import { 
   ArrowLeft,
   Star,
@@ -45,12 +46,9 @@ interface Review {
   pros?: string;
   cons?: string;
   usage_duration?: number;
+  image_urls?: string[];
   created_at: string;
   updated_at: string;
-  users_profiles?: {
-    full_name?: string;
-    display_name?: string;
-  };
 }
 
 const EquipmentDetailContent = () => {
@@ -138,8 +136,7 @@ const EquipmentDetailContent = () => {
       const { data, error } = await supabase
         .from('equipment_reviews')
         .select(`
-          *,
-          users_profiles!inner(full_name, display_name)
+          *
         `)
         .eq('sku_id', equipmentId)
         .order('created_at', { ascending: false });
@@ -548,9 +545,7 @@ const EquipmentDetailContent = () => {
                       </div>
                       <div>
                         <p className="font-medium">
-                          {review.users_profiles?.display_name || 
-                           review.users_profiles?.full_name || 
-                           '匿名用户'}
+                          匿名用户
                         </p>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Calendar className="w-3 h-3" />
@@ -578,6 +573,13 @@ const EquipmentDetailContent = () => {
 
                   {review.review_content && (
                     <p className="text-gray-300 mb-4">{review.review_content}</p>
+                  )}
+
+                  {/* 评论图片 */}
+                  {review.image_urls && review.image_urls.length > 0 && (
+                    <div className="mb-4">
+                      <ReviewImages images={review.image_urls} />
+                    </div>
                   )}
 
                   {(review.pros || review.cons) && (
