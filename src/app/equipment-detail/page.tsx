@@ -91,18 +91,32 @@ const EquipmentDetailContent = () => {
         if (equipmentData && equipmentData.length > 0) {
           const equipmentItem = equipmentData[0];
 
-          // 获取评分统计
+          // 获取评分统计 - 从 equipment_reviews 表计算
           const ratingResponse = await fetch(
-            `${supabaseUrl}/rest/v1/equipment_ratings?select=*&sku_id=eq.${equipmentId}`,
+            `${supabaseUrl}/rest/v1/equipment_reviews?select=rating&sku_id=eq.${equipmentId}`,
             { headers }
           );
 
           if (ratingResponse.ok) {
             const ratingData = await ratingResponse.json();
             if (ratingData && ratingData.length > 0) {
-              equipmentItem.average_rating = ratingData[0].average_rating;
-              equipmentItem.review_count = ratingData[0].review_count;
-              equipmentItem.rating_distribution = ratingData[0].rating_distribution;
+              // 计算平均评分
+              const ratings = ratingData.map((item: any) => item.rating);
+              const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
+              
+              // 计算评分分布
+              const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+              ratings.forEach((rating: number) => {
+                distribution[rating.toString()] = (distribution[rating.toString()] || 0) + 1;
+              });
+              
+              equipmentItem.average_rating = averageRating;
+              equipmentItem.review_count = ratings.length;
+              equipmentItem.rating_distribution = distribution;
+            } else {
+              equipmentItem.average_rating = 0;
+              equipmentItem.review_count = 0;
+              equipmentItem.rating_distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
             }
           }
 

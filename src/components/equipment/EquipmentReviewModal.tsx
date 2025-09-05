@@ -94,6 +94,11 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       return;
     }
 
+    if (!user.id || !equipment.id) {
+      alert('用户或装备信息不完整，请刷新页面重试');
+      return;
+    }
+
     setSaving(true);
     try {
       const reviewData = {
@@ -105,27 +110,49 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
         pros: data.pros || null,
         cons: data.cons || null,
         usage_duration: data.usage_duration || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
+      console.log('准备提交评论数据:', reviewData);
+
+      const supabase = getSupabase();
+      
       if (existingReview) {
         // 更新现有评论
-        const { error } = await getSupabase()
+        console.log('更新评论，ID:', existingReview.id);
+        const { error } = await supabase
           .from('equipment_reviews')
           .update({
-            ...reviewData,
-            updated_at: new Date().toISOString(),
+            rating: reviewData.rating,
+            review_title: reviewData.review_title,
+            review_content: reviewData.review_content,
+            pros: reviewData.pros,
+            cons: reviewData.cons,
+            usage_duration: reviewData.usage_duration,
+            updated_at: reviewData.updated_at,
           })
           .eq('id', existingReview.id)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('更新评论失败:', error);
+          throw error;
+        }
       } else {
         // 创建新评论
-        const { error } = await getSupabase()
+        console.log('创建新评论');
+        const { data: insertedData, error } = await supabase
           .from('equipment_reviews')
-          .insert(reviewData);
+          .insert(reviewData)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('创建评论失败:', error);
+          throw error;
+        }
+        
+        console.log('评论创建成功:', insertedData);
       }
 
       onReviewSubmitted();
@@ -133,11 +160,21 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       alert(existingReview ? '评论已更新' : '评论已提交');
     } catch (error: unknown) {
       console.error('提交评论失败:', error);
-      if (error instanceof Error && error.message?.includes('duplicate key')) {
-        alert('您已经评价过这件装备了');
-      } else {
-        alert('提交失败，请重试');
+      let errorMessage = '提交失败，请重试';
+      
+      if (error instanceof Error) {
+        if (error.message?.includes('duplicate key')) {
+          errorMessage = '您已经评价过这件装备了';
+        } else if (error.message?.includes('row-level security')) {
+          errorMessage = '提交评论失败: 权限验证失败，请确保已登录';
+        } else if (error.message?.includes('equipment_ratings')) {
+          errorMessage = '提交评论失败: 数据同步错误，请重试';
+        } else {
+          errorMessage = `提交失败: ${error.message}`;
+        }
       }
+      
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
