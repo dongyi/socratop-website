@@ -18,7 +18,7 @@ import ImageUpload from './ImageUpload';
 const reviewSchema = z.object({
   rating: z.number().min(1, '请选择评分').max(5, '评分不能超过5星'),
   review_content: z.string().min(1, '请填写评论内容').max(2000, '评论内容不能超过2000字符'),
-  image_urls: z.array(z.string()).optional().default([]),
+  image_urls: z.array(z.string()).default([]),
 });
 
 type ReviewFormData = z.infer<typeof reviewSchema>;
@@ -70,7 +70,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
   });
 
   const currentRating = watch('rating');
-  const currentImages = watch('image_urls') || [];
+  const currentImages = watch('image_urls');
 
   const handleClose = () => {
     reset();
@@ -101,7 +101,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       sku_id: equipment.id,
       rating: data.rating,
       review_content: data.review_content,
-      image_urls: data.image_urls || [],
+      image_urls: data.image_urls,
     };
 
     console.log('准备提交评论数据:', reviewData);
