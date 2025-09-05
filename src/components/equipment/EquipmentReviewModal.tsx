@@ -6,6 +6,7 @@ import { getSupabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import { 
   X, 
   Star,
@@ -160,6 +161,20 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       alert(existingReview ? '评论已更新' : '评论已提交');
     } catch (error: unknown) {
       console.error('提交评论失败:', error);
+      
+      // 记录错误到 Sentry
+      Sentry.captureException(error, {
+        tags: {
+          section: 'equipment_review',
+          action: existingReview ? 'update' : 'create',
+        },
+        extra: {
+          equipment_id: equipment?.id,
+          user_id: user?.id,
+          review_data: reviewData,
+        },
+      });
+      
       let errorMessage = '提交失败，请重试';
       
       if (error instanceof Error) {
