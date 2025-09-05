@@ -101,7 +101,7 @@ const EquipmentDetailContent = () => {
             const ratingData = await ratingResponse.json();
             if (ratingData && ratingData.length > 0) {
               // 计算平均评分
-              const ratings = ratingData.map((item: any) => item.rating);
+              const ratings = ratingData.map((item: { rating: number }) => item.rating);
               const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
               
               // 计算评分分布

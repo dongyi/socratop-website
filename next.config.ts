@@ -29,7 +29,8 @@ const sentryWebpackPluginOptions = {
   transpileClientSDK: true,
 
   // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-  tunnelRoute: "/monitoring",
+  // Disabled for static exports as it requires server-side features
+  // tunnelRoute: "/monitoring",
 
   // Hides source maps from generated client bundles
   hideSourceMaps: true,

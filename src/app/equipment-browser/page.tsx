@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import { 
@@ -57,7 +56,6 @@ type ViewMode = 'grid' | 'list';
 
 const EquipmentBrowser = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -517,6 +515,7 @@ const EquipmentBrowser = () => {
                 <div className="p-4 h-full relative">
                   {/* 左上角图片区域 - 保持原始比例 */}
                   <div className="w-24 h-24 bg-gray-800 relative overflow-hidden rounded-lg float-left mr-3 mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
                       alt={item.name}
@@ -629,6 +628,7 @@ const EquipmentBrowser = () => {
                 <>
                   {/* 左侧图片 */}
                   <div className="w-24 h-24 m-4 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
                       alt={item.name}

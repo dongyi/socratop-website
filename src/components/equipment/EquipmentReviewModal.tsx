@@ -101,21 +101,23 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
     }
 
     setSaving(true);
-    try {
-      const reviewData = {
-        user_id: user.id,
-        sku_id: equipment.id,
-        rating: data.rating,
-        review_title: data.review_title || null,
-        review_content: data.review_content || null,
-        pros: data.pros || null,
-        cons: data.cons || null,
-        usage_duration: data.usage_duration || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
 
-      console.log('准备提交评论数据:', reviewData);
+    const reviewData = {
+      user_id: user.id,
+      sku_id: equipment.id,
+      rating: data.rating,
+      review_title: data.review_title || null,
+      review_content: data.review_content || null,
+      pros: data.pros || null,
+      cons: data.cons || null,
+      usage_duration: data.usage_duration || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    console.log('准备提交评论数据:', reviewData);
+
+    try {
 
       const supabase = getSupabase();
       
