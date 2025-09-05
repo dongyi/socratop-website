@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-// import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSupabase } from '@/lib/supabase';
+import Header from '@/components/Header';
 import { 
   Search, 
   Filter,
@@ -55,7 +56,7 @@ type ViewMode = 'grid' | 'list';
 
 const EquipmentBrowser = () => {
   const { user } = useAuth();
-  // const { t } = useLanguage();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -349,8 +350,10 @@ const EquipmentBrowser = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
+    <>
+      <Header />
+      <div className="min-h-screen bg-black text-white pt-16">
+        <div className="container mx-auto px-4 py-8">
         {/* 页面标题 */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">装备库</h1>
@@ -593,8 +596,9 @@ const EquipmentBrowser = () => {
             </p>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

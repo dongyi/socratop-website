@@ -19,6 +19,7 @@ const translations = {
     nav_data_analysis: "Data Analysis",
     nav_personal_center: "Personal Center",
     nav_sign_out: "Sign Out",
+    nav_sign_in_or_register: "Sign in or Register",
     
     // Homepage Hero
     title: "Socratop - Professional Sports Data Platform",
@@ -280,6 +281,7 @@ const translations = {
     nav_data_analysis: "数据分析",
     nav_personal_center: "个人中心",
     nav_sign_out: "退出登录",
+    nav_sign_in_or_register: "登录或注册",
     
     // Homepage Hero
     title: "Socratop - 专业运动数据平台",

@@ -44,7 +44,7 @@ export default function UserMenuDropdown({ className }: UserMenuDropdownProps) {
         <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50">
           <div className="p-4">
             <div className="text-sm text-gray-400 mb-3">
-              登录或注册
+              {t('nav_sign_in_or_register')}
             </div>
             
             <div className="space-y-2">
