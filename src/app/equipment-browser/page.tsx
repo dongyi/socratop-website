@@ -311,27 +311,33 @@ const EquipmentBrowser = () => {
   };
 
   // 渲染评分星星
-  const renderStars = (rating: number, size = 16) => {
+  const renderStars = (rating: number, size: 'small' | 'medium' | 'large' = 'medium') => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     
+    const sizeClass = {
+      small: 'w-3 h-3',
+      medium: 'w-4 h-4', 
+      large: 'w-5 h-5'
+    }[size];
+    
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <Star key={i} className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+        <Star key={i} className={`${sizeClass} fill-yellow-400 text-yellow-400`} />
       );
     }
     
     if (hasHalfStar) {
       stars.push(
-        <StarHalf key="half" className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+        <StarHalf key="half" className={`${sizeClass} fill-yellow-400 text-yellow-400`} />
       );
     }
     
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
-        <Star key={`empty-${i}`} className={`w-${size/4} h-${size/4} text-gray-400`} />
+        <Star key={`empty-${i}`} className={`${sizeClass} text-gray-600`} />
       );
     }
     
@@ -463,107 +469,192 @@ const EquipmentBrowser = () => {
           {sortedEquipment.map((item) => (
             <div
               key={item.id}
-              className={`bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-colors ${
-                viewMode === 'list' ? 'flex items-center gap-6' : ''
+              className={`bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:bg-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 ${
+                viewMode === 'list' ? 'flex items-stretch' : 'h-80'
               }`}
             >
-              {/* 装备头图 */}
-              {viewMode === 'grid' && (
-                <div className="aspect-video w-full mb-4 bg-gray-800 relative overflow-hidden">
-                  <img
-                    src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
-                    }}
-                  />
-                </div>
-              )}
-              {/* 列表模式头图 */}
-              {viewMode === 'list' && (
-                <div className="w-20 h-20 mr-4 bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
-                  <img
-                    src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* 装备信息 */}
-              <div className={viewMode === 'grid' ? 'p-6 pt-0' : 'flex-1'}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{item.name}</h3>
-                    <p className="text-gray-400 text-sm">{item.brands?.name}</p>
-                    <p className="text-gray-500 text-xs">{item.categories?.name}</p>
+              {viewMode === 'grid' ? (
+                // 网格模式：水平布局，图片左侧，信息右侧
+                <div className="flex h-full">
+                  {/* 左侧图片区域 - 占30%宽度 */}
+                  <div className="w-[30%] bg-gray-800 relative overflow-hidden rounded-l-xl">
+                    <img
+                      src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
+                      }}
+                    />
+                    {/* 价格标签 */}
+                    {item.msrp_price && (
+                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-md">
+                        ${item.msrp_price}
+                      </div>
+                    )}
                   </div>
-                  {item.msrp_price && (
-                    <span className="text-green-400 font-semibold">
-                      ${item.msrp_price}
-                    </span>
-                  )}
-                </div>
 
-                {/* 评分信息 */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center">
-                    {renderStars(item.average_rating || 0)}
-                  </div>
-                  <span className="text-sm text-gray-400">
-                    {item.average_rating?.toFixed(1) || '0.0'}
-                  </span>
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <MessageSquare className="w-3 h-3" />
-                    {item.review_count || 0}
-                  </div>
-                </div>
-
-                {/* 描述 */}
-                {item.description && (
-                  <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                    {item.description}
-                  </p>
-                )}
-
-                {/* 操作按钮 */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => addToMyEquipment(item)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    添加到我的装备
-                  </button>
-                  <Link
-                    href={`/equipment-detail?id=${item.id}`}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    查看详情
-                  </Link>
-                </div>
-              </div>
-
-              {/* 右侧统计信息（列表模式） */}
-              {viewMode === 'list' && (
-                <div className="flex items-center gap-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-400">
-                      {item.average_rating?.toFixed(1) || '0.0'}
+                  {/* 右侧内容区域 - 占70%宽度 */}
+                  <div className="w-[70%] p-4 flex flex-col justify-between">
+                    {/* 顶部：产品信息 */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1 leading-tight" style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        <p className="text-blue-400 text-sm font-medium">{item.brands?.name}</p>
+                        <span className="text-gray-600">•</span>
+                        <p className="text-gray-400 text-xs">{item.categories?.name}</p>
+                      </div>
+                      
+                      {/* 描述 */}
+                      {item.description && (
+                        <p className="text-gray-400 text-xs mb-3 leading-relaxed" style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {item.description}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex justify-center">
-                      {renderStars(item.average_rating || 0, 12)}
+
+                    {/* 中间：突出的评分区域 */}
+                    <div className="bg-gray-800/50 rounded-lg p-3 mb-3 border border-gray-700/50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center">
+                              {renderStars(item.average_rating || 0, 'medium')}
+                            </div>
+                            <span className="text-lg font-bold text-yellow-400">
+                              {item.average_rating?.toFixed(1) || '0.0'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <MessageSquare className="w-3 h-3" />
+                            <span>{item.review_count || 0} 评价</span>
+                          </div>
+                        </div>
+                        {/* 评分可视化 */}
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-yellow-400">
+                            {((item.average_rating || 0) * 20).toFixed(0)}%
+                          </div>
+                          <div className="text-xs text-gray-500">满意度</div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {item.review_count || 0} 评价
-                    </p>
+
+                    {/* 底部：操作按钮 */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => addToMyEquipment(item)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-medium transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        添加装备
+                      </button>
+                      <Link
+                        href={`/equipment-detail?id=${item.id}`}
+                        className="flex items-center justify-center gap-1 px-3 py-2 border border-gray-600 rounded-md text-xs hover:bg-gray-800 transition-colors"
+                      >
+                        <Eye className="w-3 h-3" />
+                        详情
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                // 列表模式：保持原有布局但优化样式
+                <>
+                  {/* 左侧图片 */}
+                  <div className="w-24 h-24 m-4 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
+                    <img
+                      src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
+                      }}
+                    />
+                  </div>
+
+                  {/* 中间内容 */}
+                  <div className="flex-1 p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-blue-400 text-sm font-medium">{item.brands?.name}</p>
+                          <span className="text-gray-600">•</span>
+                          <p className="text-gray-400 text-xs">{item.categories?.name}</p>
+                        </div>
+                      </div>
+                      {item.msrp_price && (
+                        <span className="text-green-400 font-semibold text-lg">
+                          ${item.msrp_price}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 评分信息 */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-1">
+                        {renderStars(item.average_rating || 0, 'medium')}
+                      </div>
+                      <span className="text-sm font-medium text-yellow-400">
+                        {item.average_rating?.toFixed(1) || '0.0'}
+                      </span>
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <MessageSquare className="w-3 h-3" />
+                        {item.review_count || 0} 评价
+                      </div>
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => addToMyEquipment(item)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        添加到我的装备
+                      </button>
+                      <Link
+                        href={`/equipment-detail?id=${item.id}`}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded-md text-sm hover:bg-gray-800 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        查看详情
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* 右侧评分统计 */}
+                  <div className="p-4 flex items-center justify-center">
+                    <div className="text-center bg-gray-800/30 rounded-lg p-4 min-w-[100px]">
+                      <div className="text-3xl font-bold text-yellow-400 mb-1">
+                        {item.average_rating?.toFixed(1) || '0.0'}
+                      </div>
+                      <div className="flex justify-center mb-1">
+                        {renderStars(item.average_rating || 0, 'small')}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {item.review_count || 0} 评价
+                      </div>
+                      <div className="text-xs text-yellow-400 mt-1">
+                        {((item.average_rating || 0) * 20).toFixed(0)}% 满意
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           ))}
