@@ -183,6 +183,25 @@ const EquipmentDetailContent = () => {
     }
 
     try {
+      // 先检查是否已经添加过该装备
+      const { data: existingEquipment, error: checkError } = await getSupabase()
+        .from('sports_equipment')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('sku_id', equipment.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 表示没有找到记录，这是正常的
+        throw checkError;
+      }
+
+      if (existingEquipment) {
+        alert('该装备已在您的装备库中');
+        return;
+      }
+
+      // 如果没有重复，则添加新装备
       const { error } = await getSupabase()
         .from('sports_equipment')
         .insert({

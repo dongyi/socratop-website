@@ -18,7 +18,8 @@ import {
   // Users,
   Package,
   Loader,
-  Eye
+  Eye,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -76,6 +77,10 @@ const EquipmentBrowser = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // 跟踪添加装备的状态
+  const [addingEquipment, setAddingEquipment] = useState<Set<string>>(new Set());
+  const [addedEquipment, setAddedEquipment] = useState<Set<string>>(new Set());
   
   // 每页加载数量
   const PAGE_SIZE = 20;
@@ -291,7 +296,34 @@ const EquipmentBrowser = () => {
       return;
     }
 
+    if (addedEquipment.has(sku.id)) {
+      alert('该装备已在您的装备库中');
+      return;
+    }
+
+    setAddingEquipment(prev => new Set(prev.add(sku.id)));
+
     try {
+      // 先检查是否已经添加过该装备
+      const { data: existingEquipment, error: checkError } = await getSupabase()
+        .from('sports_equipment')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('sku_id', sku.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 表示没有找到记录，这是正常的
+        throw checkError;
+      }
+
+      if (existingEquipment) {
+        setAddedEquipment(prev => new Set(prev.add(sku.id)));
+        alert('该装备已在您的装备库中');
+        return;
+      }
+
+      // 如果没有重复，则添加新装备
       const { error } = await getSupabase()
         .from('sports_equipment')
         .insert({
@@ -303,10 +335,17 @@ const EquipmentBrowser = () => {
 
       if (error) throw error;
       
+      setAddedEquipment(prev => new Set(prev.add(sku.id)));
       alert('已添加到我的装备库');
     } catch (error) {
       console.error('添加装备失败:', error);
       alert('添加失败，请重试');
+    } finally {
+      setAddingEquipment(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sku.id);
+        return newSet;
+      });
     }
   };
 
@@ -557,10 +596,23 @@ const EquipmentBrowser = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => addToMyEquipment(item)}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-medium transition-colors"
+                        disabled={addingEquipment.has(item.id) || addedEquipment.has(item.id)}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                          addedEquipment.has(item.id)
+                            ? 'bg-green-600 text-white'
+                            : addingEquipment.has(item.id)
+                              ? 'bg-gray-600 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                       >
-                        <Plus className="w-3 h-3" />
-                        添加装备
+                        {addingEquipment.has(item.id) ? (
+                          <Loader className="w-3 h-3 animate-spin" />
+                        ) : addedEquipment.has(item.id) ? (
+                          <Check className="w-3 h-3" />
+                        ) : (
+                          <Plus className="w-3 h-3" />
+                        )}
+                        {addedEquipment.has(item.id) ? '已添加' : addingEquipment.has(item.id) ? '添加中...' : '添加装备'}
                       </button>
                       <Link
                         href={`/equipment-detail?id=${item.id}`}
@@ -623,10 +675,23 @@ const EquipmentBrowser = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => addToMyEquipment(item)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+                        disabled={addingEquipment.has(item.id) || addedEquipment.has(item.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          addedEquipment.has(item.id)
+                            ? 'bg-green-600 text-white'
+                            : addingEquipment.has(item.id)
+                              ? 'bg-gray-600 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                       >
-                        <Plus className="w-4 h-4" />
-                        添加到我的装备
+                        {addingEquipment.has(item.id) ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : addedEquipment.has(item.id) ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        {addedEquipment.has(item.id) ? '已添加' : addingEquipment.has(item.id) ? '添加中...' : '添加到我的装备'}
                       </button>
                       <Link
                         href={`/equipment-detail?id=${item.id}`}
