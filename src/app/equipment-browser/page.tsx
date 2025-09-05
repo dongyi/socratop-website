@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSupabase } from '@/lib/supabase';
 import Header from '@/components/Header';
+import EquipmentReviewModal from '@/components/equipment/EquipmentReviewModal';
 import { 
   Search, 
   Filter,
@@ -18,7 +19,8 @@ import {
   Package,
   Loader,
   Eye,
-  Check
+  Check,
+  Edit
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -76,9 +78,13 @@ const EquipmentBrowser = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   
-  // 跟踪添加装备的状态
-  const [addingEquipment, setAddingEquipment] = useState<Set<string>>(new Set());
-  const [addedEquipment, setAddedEquipment] = useState<Set<string>>(new Set());
+  // 跟踪添加装备的状态 - 保留以防将来需要
+  // const [addingEquipment, setAddingEquipment] = useState<Set<string>>(new Set());
+  // const [addedEquipment, setAddedEquipment] = useState<Set<string>>(new Set());
+  
+  // 评论 Modal 状态
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedEquipmentForReview, setSelectedEquipmentForReview] = useState<Equipment | null>(null);
   
   // 每页加载数量
   const PAGE_SIZE = 20;
@@ -287,64 +293,29 @@ const EquipmentBrowser = () => {
     }
   });
 
-  // 添加到个人装备库
-  const addToMyEquipment = async (sku: Equipment) => {
+  // 添加到个人装备库功能移到装备详情页面
+  // const addToMyEquipment = async (sku: Equipment) => { ... }
+
+  // 打开评论 Modal
+  const openReviewModal = (equipment: Equipment) => {
     if (!user) {
-      alert('请先登录');
+      alert('请先登录后再评论');
       return;
     }
+    setSelectedEquipmentForReview(equipment);
+    setShowReviewModal(true);
+  };
 
-    if (addedEquipment.has(sku.id)) {
-      alert('该装备已在您的装备库中');
-      return;
-    }
+  // 关闭评论 Modal
+  const closeReviewModal = () => {
+    setShowReviewModal(false);
+    setSelectedEquipmentForReview(null);
+  };
 
-    setAddingEquipment(prev => new Set(prev.add(sku.id)));
-
-    try {
-      // 先检查是否已经添加过该装备
-      const { data: existingEquipment, error: checkError } = await getSupabase()
-        .from('sports_equipment')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('sku_id', sku.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 表示没有找到记录，这是正常的
-        throw checkError;
-      }
-
-      if (existingEquipment) {
-        setAddedEquipment(prev => new Set(prev.add(sku.id)));
-        alert('该装备已在您的装备库中');
-        return;
-      }
-
-      // 如果没有重复，则添加新装备
-      const { error } = await getSupabase()
-        .from('sports_equipment')
-        .insert({
-          user_id: user.id,
-          sku_id: sku.id,
-          brand_id: sku.brand_id,
-          category_id: sku.category_id,
-        });
-
-      if (error) throw error;
-      
-      setAddedEquipment(prev => new Set(prev.add(sku.id)));
-      alert('已添加到我的装备库');
-    } catch (error) {
-      console.error('添加装备失败:', error);
-      alert('添加失败，请重试');
-    } finally {
-      setAddingEquipment(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(sku.id);
-        return newSet;
-      });
-    }
+  // 评论提交成功后的回调
+  const handleReviewSubmitted = async () => {
+    // 重新加载装备数据以更新评分
+    await loadEquipment();
   };
 
   // 渲染评分星星
@@ -511,32 +482,32 @@ const EquipmentBrowser = () => {
               }`}
             >
               {viewMode === 'grid' ? (
-                // 网格模式：图片在左上角，内容填充其余空间
-                <div className="p-4 h-full relative">
-                  {/* 左上角图片区域 - 保持原始比例 */}
-                  <div className="w-24 h-24 bg-gray-800 relative overflow-hidden rounded-lg float-left mr-3 mb-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
-                      alt={item.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
-                      }}
-                    />
-                  </div>
-
+                // 网格模式：重新设计布局
+                <div className="p-4 h-full relative flex flex-col">
                   {/* 价格标签 - 右上角 */}
                   {item.msrp_price && (
-                    <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-md">
+                    <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-md z-10">
                       ${item.msrp_price}
                     </div>
                   )}
 
-                  {/* 内容区域 */}
-                  <div className="flex flex-col justify-between h-full">
-                    {/* 顶部：产品信息 */}
-                    <div className="flex-1">
+                  {/* 上半部分：图片和基本信息 */}
+                  <div className="flex gap-3 mb-3 flex-1">
+                    {/* 左侧图片 */}
+                    <div className="w-20 h-20 bg-gray-800 relative overflow-hidden rounded-lg flex-shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.image_urls?.[0] || '/images/equipment-placeholder.png'}
+                        alt={item.name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/equipment-placeholder.png';
+                        }}
+                      />
+                    </div>
+
+                    {/* 右侧基本信息 */}
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg mb-1 leading-tight" style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
@@ -545,7 +516,7 @@ const EquipmentBrowser = () => {
                       }}>
                         {item.name}
                       </h3>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-2">
                         <p className="text-blue-400 text-sm font-medium">{item.brands?.name}</p>
                         <span className="text-gray-600">•</span>
                         <p className="text-gray-400 text-xs">{item.categories?.name}</p>
@@ -553,7 +524,7 @@ const EquipmentBrowser = () => {
                       
                       {/* 描述 */}
                       {item.description && (
-                        <p className="text-gray-400 text-xs mb-3 leading-relaxed" style={{
+                        <p className="text-gray-400 text-xs leading-relaxed" style={{
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
@@ -563,64 +534,50 @@ const EquipmentBrowser = () => {
                         </p>
                       )}
                     </div>
+                  </div>
 
-                    {/* 中间：突出的评分区域 */}
-                    <div className="bg-gray-800/50 rounded-lg p-3 mb-3 border border-gray-700/50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex items-center">
-                              {renderStars(item.average_rating || 0, 'medium')}
-                            </div>
-                            <span className="text-lg font-bold text-yellow-400">
-                              {item.average_rating?.toFixed(1) || '0.0'}
-                            </span>
+                  {/* 中间：扩展的评分区域 */}
+                  <div className="bg-gray-800/50 rounded-lg p-3 mb-3 border border-gray-700/50">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center">
+                            {renderStars(item.average_rating || 0, 'small')}
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-gray-400">
-                            <MessageSquare className="w-3 h-3" />
-                            <span>{item.review_count || 0} 评价</span>
-                          </div>
+                          <span className="text-lg font-bold text-yellow-400">
+                            {item.average_rating?.toFixed(1) || '0.0'}
+                          </span>
                         </div>
-                        {/* 评分可视化 */}
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-yellow-400">
-                            {((item.average_rating || 0) * 20).toFixed(0)}%
-                          </div>
-                          <div className="text-xs text-gray-500">满意度</div>
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{item.review_count || 0} 评价</span>
                         </div>
                       </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-yellow-400 mb-1">
+                          {((item.average_rating || 0) * 20).toFixed(0)}%
+                        </div>
+                        <div className="text-xs text-gray-500">用户满意度</div>
+                      </div>
                     </div>
+                  </div>
 
-                    {/* 底部：操作按钮 */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => addToMyEquipment(item)}
-                        disabled={addingEquipment.has(item.id) || addedEquipment.has(item.id)}
-                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                          addedEquipment.has(item.id)
-                            ? 'bg-green-600 text-white'
-                            : addingEquipment.has(item.id)
-                              ? 'bg-gray-600 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
-                      >
-                        {addingEquipment.has(item.id) ? (
-                          <Loader className="w-3 h-3 animate-spin" />
-                        ) : addedEquipment.has(item.id) ? (
-                          <Check className="w-3 h-3" />
-                        ) : (
-                          <Plus className="w-3 h-3" />
-                        )}
-                        {addedEquipment.has(item.id) ? '已添加' : addingEquipment.has(item.id) ? '添加中...' : '添加装备'}
-                      </button>
-                      <Link
-                        href={`/equipment-detail?id=${item.id}`}
-                        className="flex items-center justify-center gap-1 px-3 py-2 border border-gray-600 rounded-md text-xs hover:bg-gray-800 transition-colors"
-                      >
-                        <Eye className="w-3 h-3" />
-                        详情
-                      </Link>
-                    </div>
+                  {/* 底部：操作按钮 */}
+                  <div className="flex gap-2 mt-auto">
+                    <button
+                      onClick={() => openReviewModal(item)}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-medium text-white transition-colors"
+                    >
+                      <Edit className="w-3 h-3" />
+                      写评论
+                    </button>
+                    <Link
+                      href={`/equipment-detail?id=${item.id}`}
+                      className="flex items-center justify-center gap-1 px-3 py-2 border border-gray-600 rounded-md text-xs hover:bg-gray-800 transition-colors"
+                    >
+                      <Eye className="w-3 h-3" />
+                      详情
+                    </Link>
                   </div>
                 </div>
               ) : (
@@ -674,24 +631,11 @@ const EquipmentBrowser = () => {
                     {/* 操作按钮 */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => addToMyEquipment(item)}
-                        disabled={addingEquipment.has(item.id) || addedEquipment.has(item.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          addedEquipment.has(item.id)
-                            ? 'bg-green-600 text-white'
-                            : addingEquipment.has(item.id)
-                              ? 'bg-gray-600 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
+                        onClick={() => openReviewModal(item)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium text-white transition-colors"
                       >
-                        {addingEquipment.has(item.id) ? (
-                          <Loader className="w-4 h-4 animate-spin" />
-                        ) : addedEquipment.has(item.id) ? (
-                          <Check className="w-4 h-4" />
-                        ) : (
-                          <Plus className="w-4 h-4" />
-                        )}
-                        {addedEquipment.has(item.id) ? '已添加' : addingEquipment.has(item.id) ? '添加中...' : '添加到我的装备'}
+                        <Edit className="w-4 h-4" />
+                        写评论
                       </button>
                       <Link
                         href={`/equipment-detail?id=${item.id}`}
@@ -755,6 +699,15 @@ const EquipmentBrowser = () => {
         )}
         </div>
       </div>
+      
+      {/* 评论 Modal */}
+      <EquipmentReviewModal
+        isOpen={showReviewModal}
+        onClose={closeReviewModal}
+        equipment={selectedEquipmentForReview}
+        onReviewSubmitted={handleReviewSubmitted}
+        existingReview={null}
+      />
     </>
   );
 };

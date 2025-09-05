@@ -16,11 +16,7 @@ import {
 
 const reviewSchema = z.object({
   rating: z.number().min(1, '请选择评分').max(5, '评分不能超过5星'),
-  review_title: z.string().max(100, '标题不能超过100字符').optional().or(z.literal('')),
-  review_content: z.string().max(2000, '评论内容不能超过2000字符').optional().or(z.literal('')),
-  pros: z.string().max(500, '优点描述不能超过500字符').optional().or(z.literal('')),
-  cons: z.string().max(500, '缺点描述不能超过500字符').optional().or(z.literal('')),
-  usage_duration: z.number().min(0, '使用时长不能为负数').optional(),
+  review_content: z.string().min(1, '请填写评论内容').max(2000, '评论内容不能超过2000字符'),
 });
 
 type ReviewFormData = z.infer<typeof reviewSchema>;
@@ -39,11 +35,7 @@ interface EquipmentReviewModalProps {
   existingReview?: {
     id: string;
     rating: number;
-    review_title?: string;
     review_content?: string;
-    pros?: string;
-    cons?: string;
-    usage_duration?: number;
   } | null;
 }
 
@@ -69,11 +61,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: existingReview?.rating || 0,
-      review_title: existingReview?.review_title || '',
       review_content: existingReview?.review_content || '',
-      pros: existingReview?.pros || '',
-      cons: existingReview?.cons || '',
-      usage_duration: existingReview?.usage_duration || undefined,
     }
   });
 
@@ -102,24 +90,32 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
 
     setSaving(true);
 
+    // 使用当前认证的用户ID确保安全性
     const reviewData = {
       user_id: user.id,
       sku_id: equipment.id,
       rating: data.rating,
-      review_title: data.review_title || null,
-      review_content: data.review_content || null,
-      pros: data.pros || null,
-      cons: data.cons || null,
-      usage_duration: data.usage_duration || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      review_content: data.review_content,
     };
 
     console.log('准备提交评论数据:', reviewData);
 
     try {
-
       const supabase = getSupabase();
+      
+      // 验证用户会话
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !currentUser) {
+        throw new Error('用户未登录或会话已过期，请重新登录');
+      }
+      
+      console.log('当前用户:', currentUser.id, '提交用户:', user.id);
+      
+      // 确保使用当前认证的用户ID
+      const finalReviewData = {
+        ...reviewData,
+        user_id: currentUser.id
+      };
       
       if (existingReview) {
         // 更新现有评论
@@ -127,16 +123,11 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
         const { error } = await supabase
           .from('equipment_reviews')
           .update({
-            rating: reviewData.rating,
-            review_title: reviewData.review_title,
-            review_content: reviewData.review_content,
-            pros: reviewData.pros,
-            cons: reviewData.cons,
-            usage_duration: reviewData.usage_duration,
-            updated_at: reviewData.updated_at,
+            rating: finalReviewData.rating,
+            review_content: finalReviewData.review_content,
           })
           .eq('id', existingReview.id)
-          .eq('user_id', user.id);
+          .eq('user_id', currentUser.id);
 
         if (error) {
           console.error('更新评论失败:', error);
@@ -147,11 +138,17 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
         console.log('创建新评论');
         const { data: insertedData, error } = await supabase
           .from('equipment_reviews')
-          .insert(reviewData)
+          .insert(finalReviewData)
           .select();
 
         if (error) {
           console.error('创建评论失败:', error);
+          console.error('错误详情:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
           throw error;
         }
         
@@ -174,6 +171,11 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
           equipment_id: equipment?.id,
           user_id: user?.id,
           review_data: reviewData,
+          error_details: error instanceof Error ? {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          } : error,
         },
       });
       
@@ -182,10 +184,10 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
       if (error instanceof Error) {
         if (error.message?.includes('duplicate key')) {
           errorMessage = '您已经评价过这件装备了';
-        } else if (error.message?.includes('row-level security')) {
-          errorMessage = '提交评论失败: 权限验证失败，请确保已登录';
-        } else if (error.message?.includes('equipment_ratings')) {
-          errorMessage = '提交评论失败: 数据同步错误，请重试';
+        } else if (error.message?.includes('row-level security') || error.message?.includes('42501')) {
+          errorMessage = '评论提交失败: 权限验证失败。可能是数据库配置问题，请联系管理员';
+        } else if (error.message?.includes('equipment_reviews')) {
+          errorMessage = '评论提交失败: 数据表配置错误，请联系管理员';
         } else {
           errorMessage = `提交失败: ${error.message}`;
         }
@@ -268,90 +270,20 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
               )}
             </div>
 
-            {/* 评论标题 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                评论标题
-              </label>
-              <input
-                type="text"
-                {...register('review_title')}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                placeholder="简短总结您的使用体验..."
-                maxLength={100}
-              />
-              {errors.review_title && (
-                <p className="text-red-400 text-sm mt-1">{errors.review_title.message}</p>
-              )}
-            </div>
-
             {/* 详细评论 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                详细评论
+                详细评论 *
               </label>
               <textarea
                 {...register('review_content')}
-                rows={4}
+                rows={6}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
                 placeholder="分享您的使用体验、感受等..."
                 maxLength={2000}
               />
               {errors.review_content && (
                 <p className="text-red-400 text-sm mt-1">{errors.review_content.message}</p>
-              )}
-            </div>
-
-            {/* 优点和缺点 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  优点
-                </label>
-                <textarea
-                  {...register('pros')}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                  placeholder="这款装备的优点是什么？"
-                  maxLength={500}
-                />
-                {errors.pros && (
-                  <p className="text-red-400 text-sm mt-1">{errors.pros.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  缺点
-                </label>
-                <textarea
-                  {...register('cons')}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                  placeholder="有什么需要改进的地方？"
-                  maxLength={500}
-                />
-                {errors.cons && (
-                  <p className="text-red-400 text-sm mt-1">{errors.cons.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 使用时长 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                使用时长（月）
-              </label>
-              <input
-                type="number"
-                {...register('usage_duration', { valueAsNumber: true })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                placeholder="您使用了多长时间？"
-                min="0"
-                step="1"
-              />
-              {errors.usage_duration && (
-                <p className="text-red-400 text-sm mt-1">{errors.usage_duration.message}</p>
               )}
             </div>
 

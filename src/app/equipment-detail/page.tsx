@@ -399,10 +399,10 @@ const EquipmentDetailContent = () => {
               <div className="flex gap-4">
                 <button
                   onClick={addToMyEquipment}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-md text-sm text-gray-300 hover:text-white transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  添加到我的装备
+                  <Plus className="w-3 h-3" />
+                  添加到装备库
                 </button>
                 
                 {user && (
