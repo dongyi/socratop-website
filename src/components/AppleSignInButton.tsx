@@ -38,9 +38,10 @@ declare global {
 
 interface AppleSignInButtonProps {
   className?: string;
+  onClick?: () => void;
 }
 
-export default function AppleSignInButton({ className = "" }: AppleSignInButtonProps) {
+export default function AppleSignInButton({ className = "", onClick }: AppleSignInButtonProps) {
   useEffect(() => {
     // Load Apple Sign-In SDK
     const script = document.createElement('script');
@@ -87,6 +88,7 @@ export default function AppleSignInButton({ className = "" }: AppleSignInButtonP
         console.log('Supabase auth success:', authData);
         
         // 认证状态会通过 AuthContext 自动更新，无需刷新页面
+        onClick?.();
       }
     } catch (error) {
       console.error('Apple Sign-In Error:', error);

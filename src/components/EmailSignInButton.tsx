@@ -6,9 +6,10 @@ import { getSupabase } from '@/lib/supabase';
 
 interface EmailSignInButtonProps {
   className?: string;
+  onClick?: () => void;
 }
 
-export default function EmailSignInButton({ className = "" }: EmailSignInButtonProps) {
+export default function EmailSignInButton({ className = "", onClick }: EmailSignInButtonProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -51,6 +52,7 @@ export default function EmailSignInButton({ className = "" }: EmailSignInButtonP
         setShowForm(false);
         setEmail('');
         setPassword('');
+        onClick?.();
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred');
