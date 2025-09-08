@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getSupabase } from "@/lib/supabase";
+
 import Header from "@/components/Header";
 import EquipmentReviewModal from "@/components/equipment/EquipmentReviewModal";
 import {
@@ -11,7 +11,6 @@ import {
   Filter,
   Star,
   StarHalf,
-  Plus,
   Grid,
   List,
   ChevronDown,
@@ -20,7 +19,6 @@ import {
   Package,
   Loader,
   Eye,
-  Check,
   Edit,
 } from "lucide-react";
 import Link from "next/link";

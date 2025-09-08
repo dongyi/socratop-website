@@ -645,8 +645,8 @@ const translations = {
     review_content_max_length: "评论内容不能超过2000字符",
     user_not_logged_in: "用户未登录或会话已过期，请重新登录",
     max_images_upload: "最多只能上传{count}张图片",
-    invalid_image_file: ""{fileName}" 不是有效的图片文件",
-    file_too_large: ""{fileName}" 文件过大，请选择小于5MB的图片",
+    invalid_image_file: '"{fileName}" 不是有效的图片文件',
+    file_too_large: '"{fileName}" 文件过大，请选择小于5MB的图片',
     image_upload_failed: "图片上传失败，请重试",
     equipment_already_exists: "该装备已在您的装备库中",
     added_to_equipment: "已添加到我的装备库",
@@ -673,9 +673,10 @@ const translations = {
     // Image Upload
     uploading: "上传中...",
     click_or_drag_upload: "点击或拖拽图片到此处上传",
-    upload_format_info: "支持 JPG、PNG、WebP 格式，单个文件最大 5MB，最多 {maxImages} 张",
+    upload_format_info:
+      "支持 JPG、PNG、WebP 格式，单个文件最大 5MB，最多 {maxImages} 张",
     uploaded_count: "已上传 {current}/{total} 张图片",
-    uploaded_image_alt: "上传的图片 {index}"
+    uploaded_image_alt: "上传的图片 {index}",
   },
 };
 

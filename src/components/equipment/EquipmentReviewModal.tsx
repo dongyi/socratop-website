@@ -14,7 +14,7 @@ import ImageUpload from "./ImageUpload";
 type ReviewFormData = {
   rating: number;
   review_content: string;
-  image_urls: string[];
+  image_urls?: string[];
 };
 
 interface Equipment {
@@ -326,7 +326,7 @@ const EquipmentReviewModal: React.FC<EquipmentReviewModalProps> = ({
                 {t("upload_images")}
               </label>
               <ImageUpload
-                images={currentImages}
+                images={currentImages || []}
                 onImagesChange={(images) => setValue("image_urls", images)}
                 maxImages={5}
                 disabled={saving}
