@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-// import { useLanguage } from '@/contexts/LanguageContext';
-import { getSupabase } from '@/lib/supabase';
-import EquipmentReviewModal from '@/components/equipment/EquipmentReviewModal';
-import ReviewImages from '@/components/equipment/ReviewImages';
-import { 
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getSupabase } from "@/lib/supabase";
+import EquipmentReviewModal from "@/components/equipment/EquipmentReviewModal";
+import ReviewImages from "@/components/equipment/ReviewImages";
+import {
   ArrowLeft,
   Star,
   StarHalf,
@@ -20,8 +20,8 @@ import {
   Clock,
   ThumbsUp,
   ThumbsDown,
-  Loader
-} from 'lucide-react';
+  Loader,
+} from "lucide-react";
 
 interface Equipment {
   id: string;
@@ -55,15 +55,17 @@ const EquipmentDetailContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  // const { t } = useLanguage();
-  const equipmentId = searchParams.get('id');
+  const { t } = useLanguage();
+  const equipmentId = searchParams.get("id");
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [userReview, setUserReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "highest" | "lowest"
+  >("newest");
 
   // 加载装备详情
   const loadEquipment = useCallback(async () => {
@@ -72,16 +74,16 @@ const EquipmentDetailContent = () => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
+
       const headers = {
-        'apikey': supabaseAnonKey!,
-        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey!,
+        "Content-Type": "application/json",
       };
 
       // 获取装备基本信息
       const equipmentResponse = await fetch(
         `${supabaseUrl}/rest/v1/skus?select=id,name,description,msrp_price,brand_id,category_id,brands:brand_id(id,name),categories:category_id(id,name)&id=eq.${equipmentId}`,
-        { headers }
+        { headers },
       );
 
       if (equipmentResponse.ok) {
@@ -92,29 +94,48 @@ const EquipmentDetailContent = () => {
           // 获取评分统计 - 从 equipment_reviews 表计算
           const ratingResponse = await fetch(
             `${supabaseUrl}/rest/v1/equipment_reviews?select=rating&sku_id=eq.${equipmentId}`,
-            { headers }
+            { headers },
           );
 
           if (ratingResponse.ok) {
             const ratingData = await ratingResponse.json();
             if (ratingData && ratingData.length > 0) {
               // 计算平均评分
-              const ratings = ratingData.map((item: { rating: number }) => item.rating);
-              const averageRating = ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
-              
+              const ratings = ratingData.map(
+                (item: { rating: number }) => item.rating,
+              );
+              const averageRating =
+                ratings.reduce(
+                  (sum: number, rating: number) => sum + rating,
+                  0,
+                ) / ratings.length;
+
               // 计算评分分布
-              const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+              const distribution: Record<string, number> = {
+                "1": 0,
+                "2": 0,
+                "3": 0,
+                "4": 0,
+                "5": 0,
+              };
               ratings.forEach((rating: number) => {
-                distribution[rating.toString()] = (distribution[rating.toString()] || 0) + 1;
+                distribution[rating.toString()] =
+                  (distribution[rating.toString()] || 0) + 1;
               });
-              
+
               equipmentItem.average_rating = averageRating;
               equipmentItem.review_count = ratings.length;
               equipmentItem.rating_distribution = distribution;
             } else {
               equipmentItem.average_rating = 0;
               equipmentItem.review_count = 0;
-              equipmentItem.rating_distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+              equipmentItem.rating_distribution = {
+                "1": 0,
+                "2": 0,
+                "3": 0,
+                "4": 0,
+                "5": 0,
+              };
             }
           }
 
@@ -122,7 +143,7 @@ const EquipmentDetailContent = () => {
         }
       }
     } catch (error) {
-      console.error('加载装备详情失败:', error);
+      console.error("加载装备详情失败:", error);
     }
   }, [equipmentId]);
 
@@ -132,14 +153,16 @@ const EquipmentDetailContent = () => {
 
     try {
       const supabase = getSupabase();
-      
+
       const { data, error } = await supabase
-        .from('equipment_reviews')
-        .select(`
+        .from("equipment_reviews")
+        .select(
+          `
           *
-        `)
-        .eq('sku_id', equipmentId)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .eq("sku_id", equipmentId)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -148,12 +171,13 @@ const EquipmentDetailContent = () => {
 
       // 查找当前用户的评论
       if (user) {
-        const currentUserReview = reviewsData.find(review => review.user_id === user.id);
+        const currentUserReview = reviewsData.find(
+          (review) => review.user_id === user.id,
+        );
         setUserReview(currentUserReview || null);
       }
-
     } catch (error) {
-      console.error('加载评论失败:', error);
+      console.error("加载评论失败:", error);
     }
   }, [equipmentId, user]);
 
@@ -175,69 +199,67 @@ const EquipmentDetailContent = () => {
   // 添加到个人装备库
   const addToMyEquipment = async () => {
     if (!user || !equipment) {
-      alert('请先登录');
+      alert(t("please_login"));
       return;
     }
 
     try {
       // 先检查是否已经添加过该装备
       const { data: existingEquipment, error: checkError } = await getSupabase()
-        .from('sports_equipment')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('sku_id', equipment.id)
+        .from("sports_equipment")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("sku_id", equipment.id)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError && checkError.code !== "PGRST116") {
         // PGRST116 表示没有找到记录，这是正常的
         throw checkError;
       }
 
       if (existingEquipment) {
-        alert('该装备已在您的装备库中');
+        alert(t("equipment_already_exists"));
         return;
       }
 
       // 如果没有重复，则添加新装备
-      const { error } = await getSupabase()
-        .from('sports_equipment')
-        .insert({
-          user_id: user.id,
-          sku_id: equipment.id,
-          brand_id: equipment.brand_id,
-          category_id: equipment.category_id,
-        });
+      const { error } = await getSupabase().from("sports_equipment").insert({
+        user_id: user.id,
+        sku_id: equipment.id,
+        brand_id: equipment.brand_id,
+        category_id: equipment.category_id,
+      });
 
       if (error) throw error;
-      
-      alert('已添加到我的装备库');
+
+      alert(t("added_to_equipment"));
     } catch (error) {
-      console.error('添加装备失败:', error);
-      alert('添加失败，请重试');
+      console.error("添加装备失败:", error);
+      alert(t("add_failed"));
     }
   };
 
   // 删除评论
   const deleteReview = async (reviewId: string) => {
-    if (!confirm('确定要删除这条评论吗？')) {
+    if (!confirm("确定要删除这条评论吗？")) {
       return;
     }
 
     try {
       const { error } = await getSupabase()
-        .from('equipment_reviews')
+        .from("equipment_reviews")
         .delete()
-        .eq('id', reviewId)
-        .eq('user_id', user?.id);
+        .eq("id", reviewId)
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 
       await loadReviews();
       await loadEquipment();
-      alert('评论已删除');
+      alert(t("review_deleted"));
     } catch (error) {
-      console.error('删除评论失败:', error);
-      alert('删除失败，请重试');
+      console.error("删除评论失败:", error);
+      alert(t("delete_failed"));
     }
   };
 
@@ -246,26 +268,35 @@ const EquipmentDetailContent = () => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
-    
+
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <Star key={i} className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+        <Star
+          key={i}
+          className={`w-${size / 4} h-${size / 4} fill-yellow-400 text-yellow-400`}
+        />,
       );
     }
-    
+
     if (hasHalfStar) {
       stars.push(
-        <StarHalf key="half" className={`w-${size/4} h-${size/4} fill-yellow-400 text-yellow-400`} />
+        <StarHalf
+          key="half"
+          className={`w-${size / 4} h-${size / 4} fill-yellow-400 text-yellow-400`}
+        />,
       );
     }
-    
+
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
-        <Star key={`empty-${i}`} className={`w-${size/4} h-${size/4} text-gray-400`} />
+        <Star
+          key={`empty-${i}`}
+          className={`w-${size / 4} h-${size / 4} text-gray-400`}
+        />,
       );
     }
-    
+
     return stars;
   };
 
@@ -279,8 +310,10 @@ const EquipmentDetailContent = () => {
       <div className="space-y-2">
         {[5, 4, 3, 2, 1].map((star) => {
           const count = equipment.rating_distribution![star.toString()] || 0;
-          const percentage = equipment.review_count ? (count / equipment.review_count) * 100 : 0;
-          
+          const percentage = equipment.review_count
+            ? (count / equipment.review_count) * 100
+            : 0;
+
           return (
             <div key={star} className="flex items-center gap-2">
               <span className="text-sm text-gray-300 w-4">{star}</span>
@@ -301,16 +334,20 @@ const EquipmentDetailContent = () => {
 
   // 排序评论
   const sortedReviews = reviews
-    .filter(review => review.user_id !== user?.id) // 排除当前用户的评论
+    .filter((review) => review.user_id !== user?.id) // 排除当前用户的评论
     .sort((a, b) => {
       switch (sortBy) {
-        case 'newest':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'highest':
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "highest":
           return b.rating - a.rating;
-        case 'lowest':
+        case "lowest":
           return a.rating - b.rating;
         default:
           return 0;
@@ -323,7 +360,7 @@ const EquipmentDetailContent = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">装备ID未提供</h1>
           <button
-            onClick={() => router.push('/equipment-browser')}
+            onClick={() => router.push("/equipment-browser")}
             className="text-blue-400 hover:text-blue-300"
           >
             返回装备浏览器
@@ -379,7 +416,9 @@ const EquipmentDetailContent = () => {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">{equipment.name}</h1>
-                  <p className="text-gray-400 text-lg">{equipment.brands?.name}</p>
+                  <p className="text-gray-400 text-lg">
+                    {equipment.brands?.name}
+                  </p>
                   <p className="text-gray-500">{equipment.categories?.name}</p>
                 </div>
                 {equipment.msrp_price && (
@@ -401,7 +440,7 @@ const EquipmentDetailContent = () => {
                   <Plus className="w-3 h-3" />
                   添加到装备库
                 </button>
-                
+
                 {user && (
                   <button
                     onClick={() => setShowReviewModal(true)}
@@ -427,7 +466,7 @@ const EquipmentDetailContent = () => {
             <div className="lg:w-80 bg-gray-800 rounded-lg p-6">
               <div className="text-center mb-4">
                 <div className="text-4xl font-bold text-yellow-400 mb-2">
-                  {equipment.average_rating?.toFixed(1) || '0.0'}
+                  {equipment.average_rating?.toFixed(1) || "0.0"}
                 </div>
                 <div className="flex justify-center mb-2">
                   {renderStars(equipment.average_rating || 0, 20)}
@@ -465,7 +504,9 @@ const EquipmentDetailContent = () => {
 
             <div className="flex items-center gap-2 mb-3">
               {renderStars(userReview.rating, 16)}
-              <span className="text-yellow-400 font-semibold">{userReview.rating} 星</span>
+              <span className="text-yellow-400 font-semibold">
+                {userReview.rating} 星
+              </span>
               {userReview.usage_duration && (
                 <span className="text-gray-400 text-sm">
                   · 使用了 {userReview.usage_duration} 个月
@@ -513,7 +554,7 @@ const EquipmentDetailContent = () => {
             <h2 className="text-2xl font-bold">
               所有评价 ({sortedReviews.length})
             </h2>
-            
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
@@ -530,9 +571,7 @@ const EquipmentDetailContent = () => {
             <div className="text-center py-12">
               <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2">暂无评价</h3>
-              <p className="text-gray-400">
-                成为第一个评价这款装备的用户
-              </p>
+              <p className="text-gray-400">成为第一个评价这款装备的用户</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -544,12 +583,12 @@ const EquipmentDetailContent = () => {
                         <User className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="font-medium">
-                          匿名用户
-                        </p>
+                        <p className="font-medium">匿名用户</p>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Calendar className="w-3 h-3" />
-                          {new Date(review.created_at).toLocaleDateString('zh-CN')}
+                          {new Date(review.created_at).toLocaleDateString(
+                            "zh-CN",
+                          )}
                           {review.usage_duration && (
                             <>
                               <span>·</span>
@@ -564,15 +603,21 @@ const EquipmentDetailContent = () => {
 
                   <div className="flex items-center gap-2 mb-3">
                     {renderStars(review.rating, 16)}
-                    <span className="text-yellow-400 font-semibold">{review.rating} 星</span>
+                    <span className="text-yellow-400 font-semibold">
+                      {review.rating} 星
+                    </span>
                   </div>
 
                   {review.review_title && (
-                    <h4 className="font-semibold mb-2">{review.review_title}</h4>
+                    <h4 className="font-semibold mb-2">
+                      {review.review_title}
+                    </h4>
                   )}
 
                   {review.review_content && (
-                    <p className="text-gray-300 mb-4">{review.review_content}</p>
+                    <p className="text-gray-300 mb-4">
+                      {review.review_content}
+                    </p>
                   )}
 
                   {/* 评论图片 */}
@@ -588,7 +633,9 @@ const EquipmentDetailContent = () => {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <ThumbsUp className="w-4 h-4 text-green-400" />
-                            <span className="font-medium text-green-400">优点</span>
+                            <span className="font-medium text-green-400">
+                              优点
+                            </span>
                           </div>
                           <p className="text-gray-300 text-sm">{review.pros}</p>
                         </div>
@@ -598,7 +645,9 @@ const EquipmentDetailContent = () => {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <ThumbsDown className="w-4 h-4 text-red-400" />
-                            <span className="font-medium text-red-400">缺点</span>
+                            <span className="font-medium text-red-400">
+                              缺点
+                            </span>
                           </div>
                           <p className="text-gray-300 text-sm">{review.cons}</p>
                         </div>
@@ -629,14 +678,16 @@ const EquipmentDetailContent = () => {
 
 const EquipmentDetailPage = () => {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader className="w-8 h-8 animate-spin" />
-          <span>Loading...</span>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <Loader className="w-8 h-8 animate-spin" />
+            <span>Loading...</span>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <EquipmentDetailContent />
     </Suspense>
   );
