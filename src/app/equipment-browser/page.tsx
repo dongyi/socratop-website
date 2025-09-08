@@ -124,7 +124,7 @@ const EquipmentBrowser = () => {
         setCategories(categoriesData || []);
       }
     } catch (error) {
-      console.error("加载基础数据失败:", error);
+      console.error("Failed to load basic data:", error);
     }
   }, []);
 
@@ -221,7 +221,7 @@ const EquipmentBrowser = () => {
           }
         }
       } catch (error) {
-        console.error("加载装备数据失败:", error);
+        console.error("Failed to load equipment data:", error);
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -394,8 +394,10 @@ const EquipmentBrowser = () => {
         <div className="container mx-auto px-4 py-8">
           {/* 页面标题 */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">装备库</h1>
-            <p className="text-gray-400">浏览全部装备，查看评价和评分</p>
+            <h1 className="text-3xl font-bold mb-2">
+              {t("equipment_library")}
+            </h1>
+            <p className="text-gray-400">{t("browse_all_equipment")}</p>
           </div>
 
           {/* 搜索和筛选栏 */}
@@ -405,7 +407,7 @@ const EquipmentBrowser = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索装备名称或品牌..."
+                placeholder={t("search_equipment_placeholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -419,7 +421,7 @@ const EquipmentBrowser = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-md hover:bg-gray-700"
               >
                 <Filter className="w-4 h-4" />
-                筛选
+                {t("filter")}
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
                 />
@@ -430,12 +432,14 @@ const EquipmentBrowser = () => {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
               >
-                <option value="rating-high">评分从高到低</option>
-                <option value="rating-low">评分从低到高</option>
-                <option value="reviews-most">评论数最多</option>
-                <option value="name">按名称排序</option>
-                <option value="price-low">价格从低到高</option>
-                <option value="price-high">价格从高到低</option>
+                <option value="rating-high">{t("sort_by_rating_high")}</option>
+                <option value="rating-low">{t("sort_by_rating_low")}</option>
+                <option value="reviews-most">
+                  {t("sort_by_reviews_most")}
+                </option>
+                <option value="name">{t("sort_by_name")}</option>
+                <option value="price-low">{t("sort_by_price_low")}</option>
+                <option value="price-high">{t("sort_by_price_high")}</option>
               </select>
 
               <div className="flex ml-auto">
@@ -464,7 +468,7 @@ const EquipmentBrowser = () => {
                     onChange={(e) => setSelectedBrandId(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">所有品牌</option>
+                    <option value="">{t("all_brands")}</option>
                     {brands.map((brand) => (
                       <option key={brand.id} value={brand.id}>
                         {brand.name}
@@ -480,7 +484,7 @@ const EquipmentBrowser = () => {
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">所有分类</option>
+                    <option value="">{t("all_categories")}</option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -495,10 +499,13 @@ const EquipmentBrowser = () => {
           {/* 结果统计 */}
           <div className="mb-6">
             <p className="text-gray-400">
-              找到 {totalCount} 件装备{" "}
+              {t("found_equipment").replace("{count}", totalCount.toString())}{" "}
               {equipment.length > 0 &&
                 equipment.length < totalCount &&
-                `(已显示 ${equipment.length} 件)`}
+                t("displayed_equipment").replace(
+                  "{count}",
+                  equipment.length.toString(),
+                )}
             </p>
           </div>
 
@@ -600,7 +607,12 @@ const EquipmentBrowser = () => {
                           </div>
                           <div className="flex items-center gap-1 text-xs text-gray-400">
                             <MessageSquare className="w-3 h-3" />
-                            <span>{item.review_count || 0} 评价</span>
+                            <span>
+                              {t("reviews_count").replace(
+                                "{count}",
+                                (item.review_count || 0).toString(),
+                              )}
+                            </span>
                           </div>
                         </div>
                         <div className="text-right">
@@ -608,7 +620,7 @@ const EquipmentBrowser = () => {
                             {((item.average_rating || 0) * 20).toFixed(0)}%
                           </div>
                           <div className="text-xs text-gray-500">
-                            用户满意度
+                            {t("satisfaction")}
                           </div>
                         </div>
                       </div>
@@ -621,14 +633,14 @@ const EquipmentBrowser = () => {
                         className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-medium text-white transition-colors"
                       >
                         <Edit className="w-3 h-3" />
-                        写评论
+                        {t("write_review")}
                       </button>
                       <Link
                         href={`/equipment-detail?id=${item.id}`}
                         className="flex items-center justify-center gap-1 px-3 py-2 border border-gray-600 rounded-md text-xs hover:bg-gray-800 transition-colors"
                       >
                         <Eye className="w-3 h-3" />
-                        详情
+                        {t("details")}
                       </Link>
                     </div>
                   </div>
@@ -686,7 +698,10 @@ const EquipmentBrowser = () => {
                         </span>
                         <div className="flex items-center gap-1 text-xs text-gray-400">
                           <MessageSquare className="w-3 h-3" />
-                          {item.review_count || 0} 评价
+                          {t("reviews_count").replace(
+                            "{count}",
+                            (item.review_count || 0).toString(),
+                          )}
                         </div>
                       </div>
 
@@ -697,14 +712,14 @@ const EquipmentBrowser = () => {
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium text-white transition-colors"
                         >
                           <Edit className="w-4 h-4" />
-                          写评论
+                          {t("write_review")}
                         </button>
                         <Link
                           href={`/equipment-detail?id=${item.id}`}
                           className="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded-md text-sm hover:bg-gray-800 transition-colors"
                         >
                           <Eye className="w-4 h-4" />
-                          查看详情
+                          {t("view_details")}
                         </Link>
                       </div>
                     </div>
@@ -719,10 +734,14 @@ const EquipmentBrowser = () => {
                           {renderStars(item.average_rating || 0, "small")}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {item.review_count || 0} 评价
+                          {t("reviews_count").replace(
+                            "{count}",
+                            (item.review_count || 0).toString(),
+                          )}
                         </div>
                         <div className="text-xs text-yellow-400 mt-1">
-                          {((item.average_rating || 0) * 20).toFixed(0)}% 满意
+                          {((item.average_rating || 0) * 20).toFixed(0)}%{" "}
+                          {t("satisfaction")}
                         </div>
                       </div>
                     </div>
@@ -737,7 +756,9 @@ const EquipmentBrowser = () => {
             <div className="flex justify-center py-8">
               <div className="flex items-center gap-3">
                 <Loader className="w-6 h-6 animate-spin" />
-                <span className="text-gray-400">加载更多装备...</span>
+                <span className="text-gray-400">
+                  {t("load_more_equipment")}
+                </span>
               </div>
             </div>
           )}
@@ -745,7 +766,7 @@ const EquipmentBrowser = () => {
           {/* 已加载全部提示 */}
           {!hasMore && equipment.length > 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-400">已显示全部装备</p>
+              <p className="text-gray-400">{t("all_equipment_loaded")}</p>
             </div>
           )}
 
@@ -753,8 +774,10 @@ const EquipmentBrowser = () => {
           {!loading && sortedEquipment.length === 0 && (
             <div className="text-center py-12">
               <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold mb-2">未找到装备</h3>
-              <p className="text-gray-400">尝试调整搜索条件或筛选选项</p>
+              <h3 className="text-xl font-semibold mb-2">
+                {t("no_equipment_found")}
+              </h3>
+              <p className="text-gray-400">{t("adjust_search_conditions")}</p>
             </div>
           )}
         </div>
