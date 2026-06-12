@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Header from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { UserProfile } from '@/components/profile/UserProfile';
@@ -11,6 +12,7 @@ import { EquipmentManager } from '@/components/profile/EquipmentManager';
 
 export default function ProfilePage() {
   const { isAuthenticated, loading } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -37,19 +39,19 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-black text-white pt-16">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <h1 className="text-4xl font-light mb-8 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            个人中心
+            {t('profile_page_title')}
           </h1>
           
           <Tabs defaultValue="profile" className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-gray-900 mb-8">
               <TabsTrigger value="profile" className="data-[state=active]:bg-white data-[state=active]:text-black">
-                账户信息
+                {t('profile_tab_account')}
               </TabsTrigger>
               <TabsTrigger value="strava" className="data-[state=active]:bg-white data-[state=active]:text-black">
-                Strava连接
+                {t('profile_tab_strava')}
               </TabsTrigger>
               <TabsTrigger value="equipment" className="data-[state=active]:bg-white data-[state=active]:text-black">
-                运动装备
+                {t('profile_tab_equipment')}
               </TabsTrigger>
             </TabsList>
             
