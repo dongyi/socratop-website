@@ -510,6 +510,87 @@ export default function Home() {
                   <p className="mt-3 text-gray-400 leading-relaxed">{item.answer}</p>
                 </article>
               ))}
+        {/* ── DIVIDER ── */}
+        <div className="h-px bg-gradient-to-r from-transparent via-lime-500/25 to-transparent mx-8" />
+
+        {/* ── DATA PLATFORM ── */}
+        <section id="platform-features" className="py-24 px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-white/8" />
+              <span className="text-lime-400 text-xs font-bold tracking-[0.2em] uppercase">Data Platform</span>
+              <div className="h-px flex-1 bg-white/8" />
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-16 items-start mb-16">
+              <div>
+                <h2 className="text-5xl md:text-6xl font-black leading-tight tracking-tight mb-6">
+                  {t('data_platform_title')}
+                </h2>
+                <p className="text-gray-400 text-lg leading-relaxed mb-8 max-w-lg">
+                  {t('data_platform_subtitle')}
+                </p>
+                <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
+                  {t('data_platform_subtitle')}
+                </p>
+              </div>
+
+              {/* Platform feature list */}
+              <div className="space-y-3">
+                {[
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    ),
+                    title: t('strava_integration'),
+                    desc: t('strava_integration_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    ),
+                    title: t('data_visualization'),
+                    desc: t('data_visualization_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    ),
+                    title: t('equipment_management'),
+                    desc: t('equipment_management_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    ),
+                    title: t('personal_profile'),
+                    desc: t('personal_profile_desc'),
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="group flex items-start gap-4 bg-white/3 hover:bg-white/5 border border-white/8 hover:border-lime-500/20 rounded-2xl px-5 py-4 transition-all duration-300"
+                  >
+                    <div className="text-lime-400 mt-0.5 shrink-0">{item.icon}</div>
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-1">{item.title}</div>
+                      <div className="text-gray-500 text-xs leading-relaxed">{item.desc}</div>
+                    </div>
+                    <svg className="w-4 h-4 text-white/20 group-hover:text-lime-400/50 ml-auto mt-0.5 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
