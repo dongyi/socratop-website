@@ -4,39 +4,79 @@ import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 
+const faqItems = [
+  {
+    question: "What is Socratop?",
+    answer:
+      "Socratop is a running-focused sports platform with tools for cadence training, FIT file analysis, Strava-connected activity data, and equipment tracking.",
+  },
+  {
+    question: "What does the Cadence180 running app do?",
+    answer:
+      "Cadence180 helps runners maintain a steady rhythm with an adjustable 160–200 BPM metronome, GPS tracking, background audio support, and music controls.",
+  },
+  {
+    question: "Can I analyze a FIT file with Socratop?",
+    answer:
+      "Yes. The Workout Analyzer supports FIT file uploads and presents training data such as heart rate, pace, power, time, and other session metrics.",
+  },
+  {
+    question: "Does Socratop work with Strava?",
+    answer:
+      "Socratop includes Strava connection features so you can bring activity data into your personal sports profile for analysis.",
+  },
+];
+
 export default function Home() {
   const { t, language } = useLanguage();
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'Cadence180',
-    description: 'The perfect running companion that syncs your steps with your rhythm. Built-in metronome, GPS tracking, and seamless music integration.',
-    url: 'https://socratop.com',
-    applicationCategory: 'HealthApplication',
-    operatingSystem: 'iOS',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-    downloadUrl: 'https://apps.apple.com/app/cadence180/id6746228613',
-    screenshot: [
-      'https://socratop.com/images/1.png',
-      'https://socratop.com/images/2.png',
-      'https://socratop.com/images/3.png'
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://socratop.com/#organization',
+        name: 'Socratop',
+        url: 'https://socratop.com/',
+        email: 'juvenpp@gmail.com',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://socratop.com/#website',
+        name: 'Socratop',
+        url: 'https://socratop.com/',
+        publisher: { '@id': 'https://socratop.com/#organization' },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: 'Cadence180',
+        description:
+          'A running companion with an adjustable metronome, GPS tracking, background audio support, and music integration.',
+        applicationCategory: 'SportsApplication',
+        operatingSystem: 'iOS',
+        downloadUrl: 'https://apps.apple.com/app/cadence180/id6746228613',
+        screenshot: [
+          'https://socratop.com/images/1.png',
+          'https://socratop.com/images/2.png',
+          'https://socratop.com/images/3.png',
+        ],
+        featureList: [
+          'Adjustable 160–200 BPM metronome',
+          'GPS running tracking',
+          'Background audio support',
+          'Music app integration',
+          'Real-time pace and distance tracking',
+        ],
+        author: { '@id': 'https://socratop.com/#organization' },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer },
+        })),
+      },
     ],
-    featureList: [
-      'Smart Metronome with adjustable BPM (160-200)',
-      'Precise GPS tracking with intelligent filtering',
-      'Apple Music and podcast integration',
-      'Background audio support',
-      'Real-time pace and distance tracking'
-    ],
-    author: {
-      '@type': 'Organization',
-      name: 'Cadence Team',
-      email: 'juvenpp@gmail.com'
-    }
   };
 
   return (
@@ -449,6 +489,27 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ: concise, crawlable answers to common product questions ── */}
+        <section id="faq" className="py-24 px-6 lg:px-8 bg-[#0c0c0c]">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <p className="text-orange-400 text-xs font-bold tracking-[0.2em] uppercase mb-4">Socratop FAQ</p>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight">Frequently asked questions</h2>
+              <p className="text-gray-400 text-base mt-5 max-w-2xl mx-auto">
+                Quick answers about Socratop, Cadence180, FIT file analysis, and running data.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {faqItems.map((item) => (
+                <article key={item.question} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-7">
+                  <h3 className="text-lg font-bold text-white">{item.question}</h3>
+                  <p className="mt-3 text-gray-400 leading-relaxed">{item.answer}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
