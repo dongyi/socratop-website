@@ -16,9 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://socratop.com'),
-  title: "Socratop - 专业运动数据平台 | Cadence跑步应用 & 数据分析",
-  description: "连接、分析、提升运动表现。集成Cadence跑步应用、Strava数据同步、装备管理和专业数据分析，打造完整的个人运动生态系统。",
-  keywords: "运动数据分析, Strava集成, 跑步应用, Cadence, 运动装备管理, GPS追踪, 节拍器, 运动数据可视化, 健身应用, 个人运动档案",
+  title: {
+    default: "Socratop | Running Tools, FIT Analysis & Cadence App",
+    template: "%s | Socratop",
+  },
+  description: "Socratop gives runners practical tools for cadence training, FIT file analysis, Strava-connected activity data, and equipment tracking.",
+  keywords: ["running cadence app", "FIT file analyzer", "running data analysis", "Strava integration", "running equipment tracker"],
   authors: [{ name: "Socratop Team" }],
   creator: "Socratop Team",
   publisher: "Socratop",
@@ -37,33 +40,19 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    locale: 'zh_CN',
-    url: 'https://socratop.com',
-    title: 'Socratop - 专业运动数据平台',
-    description: '连接、分析、提升运动表现。集成Cadence跑步应用、Strava数据同步、装备管理和专业数据分析。',
+    locale: 'en_US',
+    url: '/',
+    title: 'Socratop | Running Tools, FIT Analysis & Cadence App',
+    description: 'Tools for cadence training, FIT file analysis, Strava-connected activity data, and equipment tracking.',
     siteName: 'Socratop',
-    images: [
-      {
-        url: '/images/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Socratop - 专业运动数据平台',
-      },
-    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Socratop - 专业运动数据平台',
-    description: '连接、分析、提升运动表现。集成Cadence跑步应用、Strava数据同步、装备管理和专业数据分析。',
-    images: ['/images/twitter-image.png'],
-    creator: '@socratop',
-  },
-  verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
+    card: 'summary',
+    title: 'Socratop | Running Tools, FIT Analysis & Cadence App',
+    description: 'Tools for cadence training, FIT file analysis, Strava-connected activity data, and equipment tracking.',
   },
   alternates: {
-    canonical: 'https://socratop.com',
+    canonical: '/',
   },
 };
 
@@ -73,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-US">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

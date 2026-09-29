@@ -4,39 +4,79 @@ import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 
+const faqItems = [
+  {
+    question: "What is Socratop?",
+    answer:
+      "Socratop is a running-focused sports platform with tools for cadence training, FIT file analysis, Strava-connected activity data, and equipment tracking.",
+  },
+  {
+    question: "What does the Cadence180 running app do?",
+    answer:
+      "Cadence180 helps runners maintain a steady rhythm with an adjustable 160–200 BPM metronome, GPS tracking, background audio support, and music controls.",
+  },
+  {
+    question: "Can I analyze a FIT file with Socratop?",
+    answer:
+      "Yes. The Workout Analyzer supports FIT file uploads and presents training data such as heart rate, pace, power, time, and other session metrics.",
+  },
+  {
+    question: "Does Socratop work with Strava?",
+    answer:
+      "Socratop includes Strava connection features so you can bring activity data into your personal sports profile for analysis.",
+  },
+];
+
 export default function Home() {
   const { t, language } = useLanguage();
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'Cadence180',
-    description: 'The perfect running companion that syncs your steps with your rhythm. Built-in metronome, GPS tracking, and seamless music integration.',
-    url: 'https://socratop.com',
-    applicationCategory: 'HealthApplication',
-    operatingSystem: 'iOS',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-    downloadUrl: 'https://apps.apple.com/app/cadence180/id6746228613',
-    screenshot: [
-      'https://socratop.com/images/1.png',
-      'https://socratop.com/images/2.png',
-      'https://socratop.com/images/3.png'
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://socratop.com/#organization',
+        name: 'Socratop',
+        url: 'https://socratop.com/',
+        email: 'juvenpp@gmail.com',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://socratop.com/#website',
+        name: 'Socratop',
+        url: 'https://socratop.com/',
+        publisher: { '@id': 'https://socratop.com/#organization' },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: 'Cadence180',
+        description:
+          'A running companion with an adjustable metronome, GPS tracking, background audio support, and music integration.',
+        applicationCategory: 'SportsApplication',
+        operatingSystem: 'iOS',
+        downloadUrl: 'https://apps.apple.com/app/cadence180/id6746228613',
+        screenshot: [
+          'https://socratop.com/images/1.png',
+          'https://socratop.com/images/2.png',
+          'https://socratop.com/images/3.png',
+        ],
+        featureList: [
+          'Adjustable 160–200 BPM metronome',
+          'GPS running tracking',
+          'Background audio support',
+          'Music app integration',
+          'Real-time pace and distance tracking',
+        ],
+        author: { '@id': 'https://socratop.com/#organization' },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer },
+        })),
+      },
     ],
-    featureList: [
-      'Smart Metronome with adjustable BPM (160-200)',
-      'Precise GPS tracking with intelligent filtering',
-      'Apple Music and podcast integration',
-      'Background audio support',
-      'Real-time pace and distance tracking'
-    ],
-    author: {
-      '@type': 'Organization',
-      name: 'Cadence Team',
-      email: 'juvenpp@gmail.com'
-    }
   };
 
   return (
@@ -368,6 +408,108 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── DIVIDER ── */}
+        <div className="h-px bg-gradient-to-r from-transparent via-lime-500/25 to-transparent mx-8" />
+
+        {/* ── DATA PLATFORM ── */}
+        <section id="platform-features" className="py-24 px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-white/8" />
+              <span className="text-lime-400 text-xs font-bold tracking-[0.2em] uppercase">Data Platform</span>
+              <div className="h-px flex-1 bg-white/8" />
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-16 items-start mb-16">
+              <div>
+                <h2 className="text-5xl md:text-6xl font-black leading-tight tracking-tight mb-6">
+                  {t('data_platform_title')}
+                </h2>
+                <p className="text-gray-400 text-lg leading-relaxed mb-8 max-w-lg">
+                  {t('data_platform_subtitle')}
+                </p>
+                <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
+                  {t('data_platform_subtitle')}
+                </p>
+              </div>
+
+              {/* Platform feature list */}
+              <div className="space-y-3">
+                {[
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    ),
+                    title: t('strava_integration'),
+                    desc: t('strava_integration_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    ),
+                    title: t('data_visualization'),
+                    desc: t('data_visualization_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    ),
+                    title: t('equipment_management'),
+                    desc: t('equipment_management_desc'),
+                  },
+                  {
+                    icon: (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    ),
+                    title: t('personal_profile'),
+                    desc: t('personal_profile_desc'),
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="group flex items-start gap-4 bg-white/3 hover:bg-white/5 border border-white/8 hover:border-lime-500/20 rounded-2xl px-5 py-4 transition-all duration-300"
+                  >
+                    <div className="text-lime-400 mt-0.5 shrink-0">{item.icon}</div>
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-1">{item.title}</div>
+                      <div className="text-gray-500 text-xs leading-relaxed">{item.desc}</div>
+                    </div>
+                    <svg className="w-4 h-4 text-white/20 group-hover:text-lime-400/50 ml-auto mt-0.5 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ: concise, crawlable answers to common product questions ── */}
+        <section id="faq" className="py-24 px-6 lg:px-8 bg-[#0c0c0c]">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <p className="text-orange-400 text-xs font-bold tracking-[0.2em] uppercase mb-4">Socratop FAQ</p>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight">Frequently asked questions</h2>
+              <p className="text-gray-400 text-base mt-5 max-w-2xl mx-auto">
+                Quick answers about Socratop, Cadence180, FIT file analysis, and running data.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {faqItems.map((item) => (
+                <article key={item.question} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-7">
+                  <h3 className="text-lg font-bold text-white">{item.question}</h3>
+                  <p className="mt-3 text-gray-400 leading-relaxed">{item.answer}</p>
+                </article>
+              ))}
         {/* ── DIVIDER ── */}
         <div className="h-px bg-gradient-to-r from-transparent via-lime-500/25 to-transparent mx-8" />
 
